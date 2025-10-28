@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema IoT Car - Denisse Moguel</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --lavender-blush: #FFF0F5;
+            --thistle: #D8BFD8;
+            --plum-light: #E6E6FA;
+            --mauve: #E0B0FF;
+            --orchid-pastel: #DA70D6;
+            --violet-pastel: #C9A0DC;
+            --gradient-soft: linear-gradient(135deg, #E6E6FA 0%, #D8BFD8 100%);
+            --gradient-lavender: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 50%, #D8BFD8 100%);
+            --gradient-mauve: linear-gradient(135deg, #E0B0FF 0%, #DA70D6 100%);
+            --gradient-soft-purple: linear-gradient(135deg, #C9A0DC 0%, #BEA8D1 100%);
+        }
+
+        body {
+            background: var(--gradient-lavender);
+            min-height: 100vh;
+            font-family: 'Poppins', sans-serif;
+            color: #6A5ACD;
+        }
+
+        /* Efecto de partículas */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(218, 112, 214, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(200, 162, 200, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(232, 215, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #8A2BE2, #DA70D6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 15px rgba(138, 43, 226, 0.2);
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: #6A5ACD;
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        /* Cards de opciones */
+        .option-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 25px;
+            padding: 2.5rem;
+            margin: 1rem;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 10px 30px rgba(216, 191, 216, 0.3);
+            text-align: center;
+            min-height: 320px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .option-card:hover {
+            transform: translateY(-15px) scale(1.05);
+            box-shadow: 0 25px 50px rgba(218, 112, 214, 0.3);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .option-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            background: var(--gradient-mauve);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .option-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #8A2BE2;
+            margin-bottom: 1rem;
+        }
+
+        .option-description {
+            color: #6A5ACD;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .btn-option {
+            background: var(--gradient-mauve);
+            border: none;
+            border-radius: 15px;
+            padding: 12px 30px;
+            font-weight: 600;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(218, 112, 214, 0.4);
+            display: inline-block;
+        }
+
+        .btn-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(218, 112, 214, 0.6);
+            color: white;
+        }
+
+        /* Efectos decorativos */
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Footer */
+        .custom-footer {
+            background: var(--gradient-soft);
+            border-top: 2px solid rgba(255, 255, 255, 0.5);
+            color: #6A5ACD;
+            padding: 2rem 0;
+            margin-top: 4rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .option-card {
+                min-height: 280px;
+                padding: 2rem;
+            }
+            
+            .option-icon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="hero-content">
+                        <!-- Logo/Título principal -->
+                        <div class="mb-5">
+                            <i class="bi bi-car-front-fill display-1 floating" style="color: #DA70D6;"></i>
+                            <h1 class="hero-title">Sistema IoT Car</h1>
+                            <p class="hero-subtitle">Control y monitoreo en tiempo real de tu vehículo inteligente</p>
+                        </div>
+
+                        <!-- Cards de opciones -->
+                        <div class="row justify-content-center">
+                            <!-- Control -->
+                            <div class="col-lg-5 col-md-6">
+                                <div class="option-card pulse">
+                                    <i class="bi bi-joystick option-icon"></i>
+                                    <h3 class="option-title">Control</h3>
+                                    <p class="option-description">
+                                        Toma el control total de tu carro IoT. Envía comandos de movimiento, 
+                                        activa modos automáticos y gestiona el dispositivo en tiempo real.
+                                    </p>
+                                    <a href="client_push_post/index.html" class="btn-option">
+                                        <i class="bi bi-play-circle me-2"></i>
+                                        Ir al Control
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Monitoreo -->
+                            <div class="col-lg-5 col-md-6">
+                                <div class="option-card pulse" style="animation-delay: 0.5s;">
+                                    <i class="bi bi-graph-up-arrow option-icon"></i>
+                                    <h3 class="option-title">Monitoreo</h3>
+                                    <p class="option-description">
+                                        Observa el comportamiento de tu carro IoT. Visualiza movimientos, 
+                                        detecta obstáculos y analiza datos en tiempo real.
+                                    </p>
+                                    <a href="client-push-get/index.html" class="btn-option">
+                                        <i class="bi bi-bar-chart me-2"></i>
+                                        Ir al Monitoreo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información adicional -->
+                        <div class="row mt-5">
+                            <div class="col-lg-8 mx-auto">
+                                <div class="text-center">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <i class="bi bi-lightning-charge-fill h3" style="color: #DA70D6;"></i>
+                                            <h6>Tiempo Real</h6>
+                                            <small class="text-muted">Comunicación instantánea</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <i class="bi bi-shield-check h3" style="color: #DA70D6;"></i>
+                                            <h6>Seguro</h6>
+                                            <small class="text-muted">Conexiones protegidas</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <i class="bi bi-phone h3" style="color: #DA70D6;"></i>
+                                            <h6>Responsive</h6>
+                                            <small class="text-muted">Funciona en cualquier dispositivo</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="custom-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Denisse Moguel</h5>
+                    <p class="mb-1">Sistema IoT Car</p>
+                    <p class="mb-0">Proyecto de Control y Monitoreo</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">Tecnologías Utilizadas</p>
+                    <p class="mb-0">WebSocket • Bootstrap • JavaScript • Flask • MySQL</p>
+                </div>
+            </div>
+            <hr class="my-3">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2024 Denisse Moguel. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Efectos JavaScript -->
+    <script>
+        // Efecto de escritura para el título
+        document.addEventListener('DOMContentLoaded', function() {
+            // Efecto de aparición escalonada para las cards
+            const cards = document.querySelectorAll('.option-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+
+            // Efecto de partículas simples
+            createParticles();
+        });
+
+        function createParticles() {
+            const colors = ['#E0B0FF', '#DA70D6', '#C9A0DC', '#D8BFD8'];
+            const container = document.body;
+            
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'fixed';
+                particle.style.width = Math.random() * 8 + 4 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.borderRadius = '50%';
+                particle.style.opacity = Math.random() * 0.6 + 0.2;
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.top = Math.random() * 100 + 'vh';
+                particle.style.pointerEvents = 'none';
+                particle.style.zIndex = '1';
+                
+                container.appendChild(particle);
+                
+                // Animación flotante
+                animateParticle(particle);
+            }
+        }
+
+        function animateParticle(particle) {
+            let x = parseFloat(particle.style.left);
+            let y = parseFloat(particle.style.top);
+            let dx = (Math.random() - 0.5) * 0.5;
+            let dy = (Math.random() - 0.5) * 0.5;
+            
+            function move() {
+                x += dx;
+                y += dy;
+                
+                // Rebotar en los bordes
+                if (x <= 0 || x >= 100) dx *= -1;
+                if (y <= 0 || y >= 100) dy *= -1;
+                
+                particle.style.left = x + 'vw';
+                particle.style.top = y + 'vh';
+                
+                requestAnimationFrame(move);
+            }
+            
+            move();
+        }
+    </script>
+</body>
+</html>

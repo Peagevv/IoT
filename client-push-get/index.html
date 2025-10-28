@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoreo Carro IoT - Denisse Moguel</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-graph-up me-2"></i>
+                Monitoreo Carro IoT
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#dashboard">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#monitoreo">
+                            <i class="bi bi-binoculars me-1"></i>Monitoreo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#estadisticas">
+                            <i class="bi bi-graph-up me-1"></i>Estadísticas
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="container-fluid mt-4">
+        <!-- Dashboard -->
+        <section id="dashboard">
+            <div class="row mb-4">
+                <!-- Tarjeta de Estado del Servidor -->
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-primary text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">Estado API</h5>
+                                    <p class="card-text" id="apiStatus">Verificando...</p>
+                                </div>
+                                <i class="bi bi-server display-6 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta de WebSocket -->
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-success text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">WebSocket</h5>
+                                    <p class="card-text" id="wsStatus">Desconectado</p>
+                                </div>
+                                <i class="bi bi-wifi display-6 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta de Movimientos -->
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-info text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">Movimientos</h5>
+                                    <p class="card-text" id="totalMovements">0</p>
+                                </div>
+                                <i class="bi bi-arrow-left-right display-6 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta de Obstáculos -->
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-warning text-dark h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">Obstáculos</h5>
+                                    <p class="card-text" id="totalObstacles">0</p>
+                                </div>
+                                <i class="bi bi-exclamation-triangle display-6 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button id="connectBtn" class="btn btn-success">
+                                    <i class="bi bi-plug me-1"></i>Conectar WebSocket
+                                </button>
+                                <button id="refreshBtn" class="btn btn-primary">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Actualizar Datos
+                                </button>
+                                <button id="clearBtn" class="btn btn-outline-secondary">
+                                    <i class="bi bi-trash me-1"></i>Limpiar Log
+                                </button>
+                                <div class="ms-auto d-flex align-items-center">
+                                    <span class="me-2">Dispositivo:</span>
+                                    <select id="deviceSelect" class="form-select form-select-sm" style="width: auto;">
+                                        <option value="1">Carro_Principal</option>
+                                        <option value="2">Carro_Secundario</option>
+                                    </select>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                                    <label class="form-check-label" for="autoRefresh">Auto-actualizar</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección de Monitoreo en Tiempo Real -->
+        <section id="monitoreo">
+            <div class="row">
+                <!-- Movimientos en Tiempo Real -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-play-circle me-2"></i>
+                                Movimientos en Tiempo Real
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="realTimeMovements" class="message-container">
+                                <div class="text-center text-muted py-5">
+                                    <i class="bi bi-car-front display-4"></i>
+                                    <p class="mt-3">Conecta para ver movimientos en tiempo real</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Obstáculos Detectados -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Obstáculos Detectados
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="realTimeObstacles" class="message-container">
+                                <div class="text-center text-muted py-5">
+                                    <i class="bi bi-shield-exclamation display-4"></i>
+                                    <p class="mt-3">Los obstáculos aparecerán aquí</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial -->
+            <div class="row mt-4">
+                <!-- Historial de Movimientos -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clock-history me-2"></i>
+                                Historial de Movimientos
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="movementsHistory" class="message-container">
+                                <!-- Historial se cargará aquí -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historial de Obstáculos -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-list-check me-2"></i>
+                                Historial de Obstáculos
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="obstaclesHistory" class="message-container">
+                                <!-- Historial se cargará aquí -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección de Estadísticas -->
+        <section id="estadisticas" class="mt-5">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-graph-up me-2"></i>
+                                Estadísticas del Sistema
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-2">
+                                    <h3 id="statsTotalMovements" class="text-primary">0</h3>
+                                    <p class="text-muted">Total Movimientos</p>
+                                </div>
+                                <div class="col-md-2">
+                                    <h3 id="statsTotalObstacles" class="text-warning">0</h3>
+                                    <p class="text-muted">Total Obstáculos</p>
+                                </div>
+                                <div class="col-md-2">
+                                    <h3 id="statsActiveDevices" class="text-success">0</h3>
+                                    <p class="text-muted">Dispositivos Activos</p>
+                                </div>
+                                <div class="col-md-2">
+                                    <h3 id="statsWsMessages" class="text-info">0</h3>
+                                    <p class="text-muted">Mensajes WS</p>
+                                </div>
+                                <div class="col-md-2">
+                                    <h3 id="statsConnections" class="text-secondary">0</h3>
+                                    <p class="text-muted">Conexiones</p>
+                                </div>
+                                <div class="col-md-2">
+                                    <h3 id="statsUptime" class="text-danger">0s</h3>
+                                    <p class="text-muted">Tiempo Activo</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light mt-5">
+        <div class="container py-4">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Denisse Moguel</h5>
+                    <p class="mb-1">Monitoreo Carro IoT</p>
+                    <p class="mb-0">Sistema de Monitoreo en Tiempo Real</p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Tecnologías Utilizadas</h6>
+                    <ul class="list-unstyled">
+                        <li>• Bootstrap 5</li>
+                        <li>• JavaScript ES6+</li>
+                        <li>• WebSocket API</li>
+                        <li>• Fetch API</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Proyecto</h6>
+                    <p class="mb-1">Sistema IoT de Monitoreo</p>
+                    <p class="mb-0">Control y Seguimiento en Tiempo Real</p>
+                </div>
+            </div>
+            <hr class="my-3 bg-light">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <p class="mb-0">
+                        &copy; 2024 Denisse Moguel. 
+                        <span class="text-muted">Sistema de Monitoreo IoT</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
