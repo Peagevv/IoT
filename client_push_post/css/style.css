@@ -826,3 +826,114 @@ footer a:hover {
 .message-error {
     border-left: 4px solid #F44336 !important;
 }
+/* Estilos para el sistema de obstáculos */
+.custom-btn-obstacle {
+    background: var(--gradient-obstacle) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 12px !important;
+    font-weight: 600;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 6px 20px rgba(171, 71, 188, 0.4) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.custom-btn-obstacle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.custom-btn-obstacle:hover::before {
+    left: 100%;
+}
+
+.custom-btn-obstacle:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 10px 25px rgba(171, 71, 188, 0.6) !important;
+}
+
+.obstacle-status {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px 0;
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.obstacle-success {
+    border-left-color: #00E676 !important;
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.1), rgba(0, 230, 118, 0.05)) !important;
+}
+
+.obstacle-warning {
+    border-left-color: #FF9800 !important;
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 152, 0, 0.05)) !important;
+}
+
+.obstacle-danger {
+    border-left-color: #F44336 !important;
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.1), rgba(244, 67, 54, 0.05)) !important;
+    animation: pulse 2s infinite;
+}
+
+.obstacle-info-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.obstacle-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.obstacle-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 5px 0;
+    color: #8A2BE2;
+}
+
+.obstacle-stat-label {
+    font-size: 0.8rem;
+    color: #B39DDB;
+}
+
+.obstacle-history {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 15px;
+}
+
+.obstacle-history-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px;
+    margin: 5px 0;
+    border-left: 3px solid;
+    font-size: 0.9rem;
+}
+
+.obstacle-history-item.success {
+    border-left-color: #00E676;
+}
+
+.obstacle-history-item.warning {
+    border-left-color: #FF9800;
+}
+
+.obstacle-history-item.danger {
+    border-left-color: #F44336;
+}

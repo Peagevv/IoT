@@ -1,5 +1,8 @@
 class CarControlApp {
     constructor() {
+        this.obstacleHistory = [];
+        this.obstacleCount = 0; 
+        this.lastObstacleResult = null;
         this.apiBaseUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('http://98.91.159.217:5500');
         this.wsUrl = null;
         this.ws = null;
@@ -10,7 +13,6 @@ class CarControlApp {
         this.isDemoRunning = false;
         this.commandsCount = 0;
         this.startTime = Date.now();
-        
         this.initializeEventListeners();
         this.loadDevices();
         this.loadDemos();
@@ -59,6 +61,11 @@ class CarControlApp {
             this.stopAllDemos();
             this.sendMovementCommand(3);
             this.showAlert('🛑 PARADA DE EMERGENCIA ACTIVADA', 'danger');
+        });
+
+        // Botón modo obstáculos
+        document.getElementById('sendObstacleBtn').addEventListener('click', () => {
+        this.sendObstacle();
         });
     }
 
@@ -201,6 +208,423 @@ class CarControlApp {
             12: '⭐ Movimiento Especial'
         };
         return operations[operation] || `Operación ${operation}`;
+    }
+
+   // ========== SISTEMA DE OBSTÁCULOS ==========
+
+async sendObstacle() {
+    if (!this.isConnected) {
+        this.showAlert('❌ No conectado al servidor.', 'danger');
+        return;
+    }
+
+    const tipo = document.getElementById('tipoObstaculo').value || "Izquierda";
+    const deviceName = document.getElementById('deviceSelect').options[document.getElementById('deviceSelect').selectedIndex].text;
+    
+    // Determinar resultado basado en el tipo de obstáculo
+    let resultado;
+    let alertType;
+    
+    switch(tipo) {
+        case 'Izquierda':
+            resultado = "Giro a la derecha realizado";
+            alertType = 'warning';
+            break;
+        case 'Derecha':
+            resultado = "Giro a la izquierda realizado";
+            alertType = 'warning';
+            break;
+        case 'Frente':
+            resultado = "Marcha atrás realizada";
+            alertType = 'danger';
+            break;
+        case 'Atrás':
+            resultado = "Aceleración hacia adelante";
+            alertType = 'info';
+            break;
+        default:
+            resultado = "Ruta despejada";
+            alertType = 'success';
+    }
+
+    // Mostrar alerta inmediatamente
+    this.showAlert(`🚨 Obstáculo ${tipo} detectado: ${resultado}`, alertType);
+    this.showWsMessage(`🚨 ${deviceName}: Obstáculo ${tipo} - ${resultado}`, alertType);
+
+    // Actualizar contador
+    this.commandsCount++;
+    document.getElementById('commandsCount').textContent = this.commandsCount;
+
+    // Crear objeto de obstáculo para la API
+    const obstacleData = {
+        id_dispositivo: this.currentDevice,
+        tipo_obstaculo: tipo,
+        movimiento_realizado: resultado,
+        resultado: resultado
+    };
+
+    // Agregar al historial local
+    obstacleData.timestamp = new Date().toISOString();
+    obstacleData.device_name = deviceName;
+    this.obstacleHistory.unshift(obstacleData);
+    this.obstacleCount++;
+    this.lastObstacleResult = resultado;
+
+    // Actualizar UI
+    this.updateObstacleUI();
+
+    try {
+        // ✅ URL CORRECTA CON TU IP PÚBLICA
+        const response = await fetch('http://98.91.159.217:5500/api/obstaculo', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify(obstacleData)
+        });
+        
+        if (response.ok) {
+            this.showAlert('✅ Obstáculo registrado correctamente en el servidor', 'success');
+            this.showWsMessage('✅ Obstáculo registrado en servidor', 'success');
+        } else {
+            const errorText = await response.text();
+            throw new Error(`Error ${response.status}: ${errorText}`);
+        }
+    } catch (error) {
+        console.error('Error enviando obstáculo:', error);
+        this.showAlert('⚠️ Obstáculo guardado localmente (error de conexión)', 'warning');
+        this.showWsMessage(`⚠️ Error de conexión: ${error.message}`, 'warning');
+    }
+}
+
+updateObstacleUI() {
+    // Actualizar estadísticas si existen
+    const statsContainer = document.querySelector('.obstacle-info-panel');
+    if (statsContainer) {
+        statsContainer.innerHTML = `
+            <div class="obstacle-stat-card">
+                <div class="obstacle-stat-value">${this.obstacleCount}</div>
+                <div class="obstacle-stat-label">Total Obstáculos</div>
+            </div>
+            <div class="obstacle-stat-card">
+                <div class="obstacle-stat-value">${this.lastObstacleResult ? '✓' : '—'}</div>
+                <div class="obstacle-stat-label">Último Resultado</div>
+            </div>
+        `;
+    }
+
+    // Actualizar historial si existe
+    this.updateObstacleHistory();
+}
+
+updateObstacleHistory() {
+    const historyContainer = document.querySelector('.obstacle-history');
+    if (!historyContainer) return;
+
+    if (this.obstacleHistory.length === 0) {
+        historyContainer.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-inbox"></i>
+                <p class="mt-2 mb-0">No hay registros de obstáculos</p>
+            </div>
+        `;
+        return;
+    }
+
+    let historyHTML = '';
+    this.obstacleHistory.slice(0, 5).forEach(obstacle => {
+        let itemClass = 'obstacle-history-item success';
+        if (obstacle.tipo_obstaculo === 'Frente') itemClass = 'obstacle-history-item danger';
+        else if (obstacle.tipo_obstaculo === 'Izquierda' || obstacle.tipo_obstaculo === 'Derecha') 
+            itemClass = 'obstacle-history-item warning';
+
+        historyHTML += `
+            <div class="${itemClass}">
+                <div class="d-flex justify-content-between">
+                    <strong>${obstacle.tipo_obstaculo}</strong>
+                    <small>${new Date(obstacle.timestamp).toLocaleTimeString()}</small>
+                </div>
+                <small class="text-muted">${obstacle.movimiento_realizado}</small>
+            </div>
+        `;
+    });
+
+    historyContainer.innerHTML = historyHTML;
+}
+
+// Método para obtener estadísticas de obstáculos
+getObstacleStats() {
+    const stats = {
+        total: this.obstacleHistory.length,
+        byType: {},
+        lastResult: this.lastObstacleResult
+    };
+
+    this.obstacleHistory.forEach(obstacle => {
+        stats.byType[obstacle.tipo_obstaculo] = (stats.byType[obstacle.tipo_obstaculo] || 0) + 1;
+    });
+
+    return stats;
+}
+
+// Método para limpiar historial de obstáculos
+clearObstacleHistory() {
+    if (this.obstacleHistory.length === 0) {
+        this.showAlert('ℹ️ No hay historial de obstáculos para limpiar', 'info');
+        return;
+    }
+
+    if (confirm('¿Estás segura de que quieres limpiar todo el historial de obstáculos?')) {
+        this.obstacleHistory = [];
+        this.obstacleCount = 0;
+        this.lastObstacleResult = null;
+        this.updateObstacleUI();
+        this.showAlert('✅ Historial de obstáculos limpiado', 'success');
+    }
+}
+
+    checkPathClearance(direction, distance) {
+        const resultDisplay = document.getElementById('obstacleResult');
+        
+        if (distance < 30) {
+            // Obstáculo detectado
+            resultDisplay.className = 'obstacle-result obstacle-detected';
+            resultDisplay.innerHTML = `
+                <i class="bi bi-exclamation-triangle-fill display-6"></i>
+                <h5 class="mt-3">¡OBSTÁCULO DETECTADO!</h5>
+                <p class="mb-2">Dirección: ${this.getDirectionName(direction)}</p>
+                <p class="mb-0">Distancia: ${distance} cm - EVITAR COLISIÓN</p>
+            `;
+            
+            // Actualizar visualización de dirección
+            this.updateDirectionVisualization(direction, true);
+            
+        } else {
+            // Camino despejado
+            resultDisplay.className = 'obstacle-result obstacle-clear';
+            resultDisplay.innerHTML = `
+                <i class="bi bi-check-circle-fill display-6"></i>
+                <h5 class="mt-3">Camino Despejado</h5>
+                <p class="mb-2">Dirección: ${this.getDirectionName(direction)}</p>
+                <p class="mb-0">Distancia: ${distance} cm - AVANCE SEGURO</p>
+            `;
+            
+            // Actualizar visualización de dirección
+            this.updateDirectionVisualization(direction, false);
+        }
+        
+        // Mostrar alerta
+        this.showObstacleAlert(distance, this.getDirectionName(direction), false);
+    }
+
+    registerObstacle(direction, distance) {
+        const timestamp = new Date().toISOString();
+        const directionName = this.getDirectionName(direction);
+        
+        const obstacle = {
+            id: Date.now(),
+            direction: direction,
+            directionName: directionName,
+            distance: distance,
+            timestamp: timestamp,
+            deviceId: this.currentDevice,
+            status: distance < 30 ? 'blocked' : 'clear'
+        };
+        
+        this.obstacleHistory.push(obstacle);
+        this.obstacleCount++;
+        
+        // Mostrar resultado
+        this.checkPathClearance(direction, distance);
+        
+        // Mostrar alerta de registro
+        this.showAlert(
+            distance < 30 ? 
+            `🚨 Obstáculo registrado en ${directionName} (${distance} cm)` :
+            `📝 Área ${directionName} registrada como despejada (${distance} cm)`,
+            distance < 30 ? 'warning' : 'success'
+        );
+        
+        this.showWsMessage(
+            distance < 30 ?
+            `🚨 Obstáculo registrado: ${directionName} - ${distance} cm` :
+            `✅ Área despejada registrada: ${directionName} - ${distance} cm`,
+            distance < 30 ? 'warning' : 'success'
+        );
+        
+        // Enviar al servidor
+        this.sendObstacleData(obstacle);
+        
+        // Actualizar UI si el modal está abierto
+        this.updateObstacleManagerUI();
+    }
+
+    getDirectionName(direction) {
+        const names = {
+            'front': 'Frente',
+            'back': 'Atrás',
+            'left': 'Izquierda',
+            'right': 'Derecha',
+            'center': 'Centro'
+        };
+        return names[direction] || direction;
+    }
+
+    updateDirectionVisualization(direction, hasObstacle) {
+        const directionGrid = document.querySelector('.obstacle-visualization');
+        if (!directionGrid) return;
+        
+        // Remover clases de obstáculo de todas las direcciones
+        directionGrid.querySelectorAll('.obstacle-direction').forEach(btn => {
+            btn.classList.remove('has-obstacle');
+        });
+        
+        // Agregar clase de obstáculo a la dirección específica
+        const directions = ['front', 'left', 'center', 'right', 'back'];
+        const directionIndex = directions.indexOf(direction);
+        if (directionIndex !== -1 && hasObstacle) {
+            const targetBtn = directionGrid.children[directionIndex];
+            targetBtn.classList.add('has-obstacle');
+        }
+    }
+
+    updateObstacleManagerUI() {
+        const modal = document.getElementById('obstacleManagerModal');
+        if (!modal) return;
+        
+        // Actualizar estadísticas
+        const statsPanel = modal.querySelector('.obstacle-stats');
+        if (statsPanel) {
+            const activeCount = this.obstacleHistory.filter(obs => obs.distance < 30).length;
+            statsPanel.innerHTML = `
+                <div class="obstacle-stat-card">
+                    <div class="obstacle-stat-value">${this.obstacleCount}</div>
+                    <div class="obstacle-stat-label">Total Registros</div>
+                </div>
+                <div class="obstacle-stat-card">
+                    <div class="obstacle-stat-value">${activeCount}</div>
+                    <div class="obstacle-stat-label">Obstáculos Activos</div>
+                </div>
+            `;
+        }
+        
+        // Actualizar historial
+        const historyContainer = modal.querySelector('.obstacle-table');
+        if (historyContainer) {
+            historyContainer.innerHTML = '';
+            historyContainer.appendChild(this.createObstacleHistoryTable());
+        }
+    }
+
+    createObstacleHistoryTable() {
+        const table = document.createElement('table');
+        table.className = 'table table-hover';
+        
+        // Header
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th>#</th>
+                <th>Dirección</th>
+                <th>Distancia</th>
+                <th>Estado</th>
+                <th>Timestamp</th>
+                <th>Acciones</th>
+            </tr>
+        `;
+        
+        // Body
+        const tbody = document.createElement('tbody');
+        
+        if (this.obstacleHistory.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox display-6"></i>
+                        <p class="mt-2">No hay obstáculos registrados</p>
+                        <small>Usa el formulario para registrar obstáculos</small>
+                    </td>
+                </tr>
+            `;
+        } else {
+            this.obstacleHistory.slice().reverse().forEach((obstacle, index) => {
+                const row = document.createElement('tr');
+                const isBlocked = obstacle.distance < 30;
+                
+                row.innerHTML = `
+                    <td>${this.obstacleHistory.length - index}</td>
+                    <td>
+                        <i class="bi bi-${this.getDirectionIcon(obstacle.direction)} me-2"></i>
+                        ${obstacle.directionName}
+                    </td>
+                    <td>${obstacle.distance} cm</td>
+                    <td>
+                        <span class="badge ${isBlocked ? 'badge-blocked' : 'badge-free'}">
+                            ${isBlocked ? 'OBSTÁCULO' : 'Despejado'}
+                        </span>
+                    </td>
+                    <td>${new Date(obstacle.timestamp).toLocaleTimeString()}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="app.deleteObstacle(${obstacle.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        return table;
+    }
+
+    getDirectionIcon(direction) {
+        const icons = {
+            'front': 'arrow-up',
+            'back': 'arrow-down',
+            'left': 'arrow-left',
+            'right': 'arrow-right',
+            'center': 'circle'
+        };
+        return icons[direction] || 'circle';
+    }
+
+    deleteObstacle(obstacleId) {
+        if (confirm('¿Estás segura de que quieres eliminar este registro de obstáculo?')) {
+            this.obstacleHistory = this.obstacleHistory.filter(obs => obs.id !== obstacleId);
+            this.obstacleCount = this.obstacleHistory.length;
+            this.updateObstacleManagerUI();
+            this.showAlert('✅ Registro de obstáculo eliminado', 'success');
+        }
+    }
+
+    async sendObstacleData(obstacle) {
+        if (!this.isConnected) return;
+        
+        try {
+            await fetch(`${this.apiBaseUrl}/api/obstacle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(obstacle)
+            });
+        } catch (error) {
+            // Ignorar errores silenciosamente
+        }
+    }
+
+    showObstacleAlert(distance, directionName, isRegistration = true) {
+        const action = isRegistration ? 'registrado' : 'detectado';
+        
+        if (distance < 30) {
+            this.showAlert(`🚨 Obstáculo ${action} en ${directionName} (${distance} cm)`, 'warning');
+            this.showWsMessage(`🚨 Obstáculo ${action}: ${directionName} - ${distance} cm`, 'warning');
+        } else {
+            this.showAlert(`✅ Área ${directionName} despejada (${distance} cm)`, 'success');
+            this.showWsMessage(`✅ Área despejada ${action}: ${directionName} - ${distance} cm`, 'success');
+        }
     }
 
     // ========== GESTIÓN DE CARROS ==========
@@ -1269,9 +1693,9 @@ class CarControlApp {
             }
         } else {
             this.isConnected = true;
-            this.updateConnectionStatus('Conectado ✅ (HTTP)', 'success');
-            this.showAlert('✅ Conectado al servidor via HTTP', 'success');
-            this.showWsMessage('🔗 Conectado via APIs REST HTTP', 'success');
+            this.updateConnectionStatus('Conectado ✅ ', 'success');
+            this.showAlert('✅ Conectado al servidor', 'success');
+            this.showWsMessage('🔗 Conectado via APIs', 'success');
         }
     }
 
