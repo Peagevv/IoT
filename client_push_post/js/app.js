@@ -6,6 +6,7 @@ class CarControlApp {
         this.isConnected = false;
         this.currentDevice = 1;
         this.demos = [];
+        this.devices = []; // Array para almacenar los dispositivos
         this.isDemoRunning = false;
         this.commandsCount = 0;
         this.startTime = Date.now();
@@ -29,7 +30,8 @@ class CarControlApp {
         // Selector de dispositivo
         document.getElementById('deviceSelect').addEventListener('change', (e) => {
             this.currentDevice = parseInt(e.target.value);
-            this.showAlert(`Cambiado a: ${e.target.options[e.target.selectedIndex].text}`, 'info');
+            const device = this.devices.find(d => d.id_dispositivo === this.currentDevice);
+            this.showAlert(`Cambiado a: ${device ? device.nombre_dispositivo : 'Carro_Principal'}`, 'info');
         });
 
         // Botón modo demo
@@ -45,6 +47,11 @@ class CarControlApp {
         // Botón crear nueva demo
         document.getElementById('createDemoBtn').addEventListener('click', () => {
             this.showDemoCreator();
+        });
+
+        // Botón gestionar carros
+        document.getElementById('manageCarsBtn').addEventListener('click', () => {
+            this.showCarManager();
         });
 
         // Botón detener emergencia
@@ -65,13 +72,24 @@ class CarControlApp {
             const data = JSON.parse(text);
             
             if (data.status === 'success') {
-                this.populateDeviceSelect(data.data);
+                this.devices = data.data;
+                this.populateDeviceSelect(this.devices);
             } else {
                 throw new Error(`Error del servidor: ${data.message}`);
             }
         } catch (error) {
             console.error('Error loading devices:', error);
-            this.populateDeviceSelect();
+            // Dispositivos por defecto
+            this.devices = [
+                {
+                    id_dispositivo: 1,
+                    nombre_dispositivo: 'Carro_Principal',
+                    descripcion: 'Carro principal de control',
+                    estado: 'activo',
+                    fecha_creacion: new Date().toISOString()
+                }
+            ];
+            this.populateDeviceSelect(this.devices);
         }
     }
 
@@ -184,6 +202,352 @@ class CarControlApp {
         };
         return operations[operation] || `Operación ${operation}`;
     }
+
+    // ========== GESTIÓN DE CARROS ==========
+
+    showCarManager() {
+        this.createModal(
+            'carManagerModal',
+            'Gestor de Carros',
+            'custom-card-header-info',
+            this.createCarManagerContent(),
+            'large'
+        );
+    }
+
+    createCarManagerContent() {
+        const container = document.createElement('div');
+        
+        // Botón agregar nuevo carro
+        const addBtnContainer = document.createElement('div');
+        addBtnContainer.className = 'd-grid gap-2 mb-3';
+        
+        const addBtn = this.createButton(
+            'Agregar Nuevo Carro',
+            'custom-btn-success',
+            'bi-plus-circle',
+            () => this.showCarCreator()
+        );
+        
+        addBtnContainer.appendChild(addBtn);
+        
+        // Lista de carros
+        const carList = document.createElement('div');
+        carList.className = 'list-group custom-list-group';
+        
+        if (this.devices.length === 0) {
+            const emptyItem = document.createElement('div');
+            emptyItem.className = 'list-group-item text-center text-muted py-4';
+            emptyItem.innerHTML = `
+                <i class="bi bi-inbox display-4"></i>
+                <p class="mt-3">No hay carros registrados</p>
+                <small>Agrega tu primer carro para comenzar</small>
+            `;
+            carList.appendChild(emptyItem);
+        } else {
+            this.devices.forEach(device => {
+                const carItem = this.createCarListItem(device);
+                carList.appendChild(carItem);
+            });
+        }
+        
+        container.appendChild(addBtnContainer);
+        container.appendChild(carList);
+        
+        return container;
+    }
+
+    createCarListItem(device) {
+        const item = document.createElement('div');
+        item.className = 'list-group-item custom-list-group-item';
+        
+        const header = document.createElement('div');
+        header.className = 'd-flex w-100 justify-content-between align-items-start';
+        
+        const title = document.createElement('h6');
+        title.className = 'mb-1 text-purple';
+        title.textContent = device.nombre_dispositivo;
+        
+        const status = document.createElement('span');
+        status.className = `badge ${device.estado === 'activo' ? 'bg-success' : 'bg-secondary'}`;
+        status.textContent = device.estado === 'activo' ? 'Activo' : 'Inactivo';
+        
+        header.appendChild(title);
+        header.appendChild(status);
+        
+        const description = document.createElement('p');
+        description.className = 'mb-1';
+        description.textContent = device.descripcion || 'Sin descripción';
+        
+        const deviceInfo = document.createElement('small');
+        deviceInfo.className = 'text-muted';
+        deviceInfo.textContent = `ID: ${device.id_dispositivo} | Creado: ${new Date(device.fecha_creacion).toLocaleDateString()}`;
+        
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'mt-2';
+        
+        const selectBtn = this.createButton(
+            'Seleccionar',
+            'custom-btn-primary btn-sm me-1',
+            'bi-check-circle',
+            () => {
+                this.currentDevice = device.id_dispositivo;
+                this.populateDeviceSelect(this.devices);
+                this.showAlert(`✅ Carro seleccionado: ${device.nombre_dispositivo}`, 'success');
+                this.closeModal('carManagerModal');
+            }
+        );
+        
+        const editBtn = this.createButton(
+            'Editar',
+            'custom-btn-warning btn-sm me-1',
+            'bi-pencil',
+            () => this.showCarEditor(device)
+        );
+        
+        const deleteBtn = this.createButton(
+            'Eliminar',
+            'custom-btn-danger btn-sm',
+            'bi-trash',
+            () => this.deleteCar(device.id_dispositivo)
+        );
+        
+        buttonContainer.appendChild(selectBtn);
+        buttonContainer.appendChild(editBtn);
+        buttonContainer.appendChild(deleteBtn);
+        
+        item.appendChild(header);
+        item.appendChild(description);
+        item.appendChild(deviceInfo);
+        item.appendChild(buttonContainer);
+        
+        return item;
+    }
+
+    showCarCreator() {
+        this.createModal(
+            'carCreatorModal',
+            'Agregar Nuevo Carro',
+            'custom-card-header-success',
+            this.createCarForm(),
+            'medium'
+        );
+    }
+
+    showCarEditor(device) {
+        this.createModal(
+            'carEditorModal',
+            'Editar Carro',
+            'custom-card-header-warning',
+            this.createCarForm(device),
+            'medium'
+        );
+    }
+
+    createCarForm(device = null) {
+        const container = document.createElement('div');
+        
+        // Nombre del carro
+        const nameGroup = this.createFormGroup(
+            'Nombre del Carro:',
+            'text',
+            'carName',
+            'Ej: Carro_Explorador_1',
+            device ? device.nombre_dispositivo : ''
+        );
+        
+        // Descripción
+        const descGroup = document.createElement('div');
+        descGroup.className = 'mb-3';
+        
+        const descLabel = document.createElement('label');
+        descLabel.className = 'form-label';
+        descLabel.textContent = 'Descripción:';
+        
+        const descTextarea = document.createElement('textarea');
+        descTextarea.id = 'carDescription';
+        descTextarea.className = 'form-control custom-input';
+        descTextarea.rows = 3;
+        descTextarea.placeholder = 'Describe las características del carro...';
+        if (device && device.descripcion) {
+            descTextarea.value = device.descripcion;
+        }
+        
+        descGroup.appendChild(descLabel);
+        descGroup.appendChild(descTextarea);
+        
+        // Estado (solo para edición)
+        let statusGroup;
+        if (device) {
+            statusGroup = document.createElement('div');
+            statusGroup.className = 'mb-3';
+            
+            const statusLabel = document.createElement('label');
+            statusLabel.className = 'form-label';
+            statusLabel.textContent = 'Estado:';
+            
+            const statusSelect = document.createElement('select');
+            statusSelect.id = 'carStatus';
+            statusSelect.className = 'form-select custom-select';
+            
+            const activeOption = document.createElement('option');
+            activeOption.value = 'activo';
+            activeOption.textContent = 'Activo';
+            if (device.estado === 'activo') activeOption.selected = true;
+            
+            const inactiveOption = document.createElement('option');
+            inactiveOption.value = 'inactivo';
+            inactiveOption.textContent = 'Inactivo';
+            if (device.estado === 'inactivo') inactiveOption.selected = true;
+            
+            statusSelect.appendChild(activeOption);
+            statusSelect.appendChild(inactiveOption);
+            
+            statusGroup.appendChild(statusLabel);
+            statusGroup.appendChild(statusSelect);
+        }
+        
+        // Botones de acción
+        const actionContainer = document.createElement('div');
+        actionContainer.className = 'd-grid gap-2';
+        
+        const saveBtn = this.createButton(
+            device ? 'Actualizar Carro' : 'Guardar Carro',
+            'custom-btn-success',
+            'bi-check-circle',
+            () => device ? this.updateCar(device.id_dispositivo) : this.saveCar()
+        );
+        
+        actionContainer.appendChild(saveBtn);
+        
+        // Ensamblar todo
+        container.appendChild(nameGroup);
+        container.appendChild(descGroup);
+        if (statusGroup) container.appendChild(statusGroup);
+        container.appendChild(actionContainer);
+        
+        return container;
+    }
+
+    async saveCar() {
+        const name = document.getElementById('carName').value;
+        const description = document.getElementById('carDescription').value;
+        
+        if (!name) {
+            this.showAlert('❌ El nombre del carro es requerido', 'danger');
+            return;
+        }
+        
+        const newCar = {
+            id_dispositivo: Date.now(), // ID temporal
+            nombre_dispositivo: name,
+            descripcion: description,
+            estado: 'activo',
+            fecha_creacion: new Date().toISOString()
+        };
+        
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/devices`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newCar)
+            });
+            
+            if (response.ok) {
+                this.showAlert('✅ Carro guardado correctamente', 'success');
+                await this.loadDevices();
+                this.closeModal('carCreatorModal');
+            } else {
+                throw new Error('Error del servidor');
+            }
+        } catch (error) {
+            // Si falla el servidor, guardar localmente
+            this.devices.push(newCar);
+            this.populateDeviceSelect(this.devices);
+            this.showAlert('✅ Carro guardado localmente', 'success');
+            this.closeModal('carCreatorModal');
+        }
+    }
+
+    async updateCar(carId) {
+        const name = document.getElementById('carName').value;
+        const description = document.getElementById('carDescription').value;
+        const status = document.getElementById('carStatus').value;
+        
+        if (!name) {
+            this.showAlert('❌ El nombre del carro es requerido', 'danger');
+            return;
+        }
+        
+        const updatedCar = {
+            nombre_dispositivo: name,
+            descripcion: description,
+            estado: status
+        };
+        
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/devices/${carId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedCar)
+            });
+            
+            if (response.ok) {
+                this.showAlert('✅ Carro actualizado correctamente', 'success');
+                await this.loadDevices();
+                this.closeModal('carEditorModal');
+            } else {
+                throw new Error('Error del servidor');
+            }
+        } catch (error) {
+            // Si falla el servidor, actualizar localmente
+            const index = this.devices.findIndex(d => d.id_dispositivo === carId);
+            if (index !== -1) {
+                this.devices[index] = { ...this.devices[index], ...updatedCar };
+                this.populateDeviceSelect(this.devices);
+                this.showAlert('✅ Carro actualizado localmente', 'success');
+                this.closeModal('carEditorModal');
+            }
+        }
+    }
+
+    async deleteCar(carId) {
+        const car = this.devices.find(d => d.id_dispositivo === carId);
+        if (!car) return;
+        
+        if (confirm(`¿Estás segura de que quieres eliminar el carro "${car.nombre_dispositivo}"?`)) {
+            try {
+                const response = await fetch(`${this.apiBaseUrl}/api/devices/${carId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    this.showAlert('✅ Carro eliminado correctamente', 'success');
+                    await this.loadDevices();
+                    // Si eliminamos el carro actual, cambiar al primero disponible
+                    if (this.currentDevice === carId) {
+                        this.currentDevice = this.devices.length > 0 ? this.devices[0].id_dispositivo : 1;
+                        this.populateDeviceSelect(this.devices);
+                    }
+                }
+            } catch (error) {
+                // Si falla el servidor, eliminar localmente
+                this.devices = this.devices.filter(d => d.id_dispositivo !== carId);
+                this.populateDeviceSelect(this.devices);
+                // Si eliminamos el carro actual, cambiar al primero disponible
+                if (this.currentDevice === carId) {
+                    this.currentDevice = this.devices.length > 0 ? this.devices[0].id_dispositivo : 1;
+                }
+                this.showAlert('✅ Carro eliminado localmente', 'success');
+            }
+        }
+    }
+
+    // ========== MÉTODOS EXISTENTES (sin cambios) ==========
 
     startDemoMode(demoSequence) {
         if (!this.isConnected) {
@@ -826,7 +1190,7 @@ class CarControlApp {
         return button;
     }
 
-    createFormGroup(labelText, inputType, inputId, placeholder) {
+    createFormGroup(labelText, inputType, inputId, placeholder, value = '') {
         const group = document.createElement('div');
         group.className = 'mb-3';
         
@@ -839,6 +1203,7 @@ class CarControlApp {
         input.id = inputId;
         input.className = 'form-control custom-input';
         input.placeholder = placeholder;
+        if (value) input.value = value;
         
         group.appendChild(label);
         group.appendChild(input);

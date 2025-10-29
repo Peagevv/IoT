@@ -12,26 +12,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --lavender-blush: #FFF0F5;
-            --thistle: #D8BFD8;
-            --plum-light: #E6E6FA;
-            --mauve: #E0B0FF;
-            --orchid-pastel: #DA70D6;
-            --violet-pastel: #C9A0DC;
-            --gradient-soft: linear-gradient(135deg, #E6E6FA 0%, #D8BFD8 100%);
-            --gradient-lavender: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 50%, #D8BFD8 100%);
-            --gradient-mauve: linear-gradient(135deg, #E0B0FF 0%, #DA70D6 100%);
-            --gradient-soft-purple: linear-gradient(135deg, #C9A0DC 0%, #BEA8D1 100%);
+            --deep-purple: #6A0DAD;
+            --electric-purple: #8A2BE2;
+            --violet: #9400D3;
+            --lavender: #E6E6FA;
+            --amethyst: #9966CC;
+            --plum: #DDA0DD;
+            --orchid: #DA70D6;
+            --magenta: #FF00FF;
+            --gradient-primary: linear-gradient(135deg, #6A0DAD 0%, #8A2BE2 100%);
+            --gradient-secondary: linear-gradient(135deg, #9400D3 0%, #BA55D3 100%);
+            --gradient-dark: linear-gradient(135deg, #4B0082 0%, #6A0DAD 100%);
+            --gradient-success: linear-gradient(135deg, #9C27B0 0%, #E91E63 100%);
+            --gradient-warning: linear-gradient(135deg, #673AB7 0%, #2196F3 100%);
+            --gradient-danger: linear-gradient(135deg, #E91E63 0%, #F44336 100%);
+            --gradient-info: linear-gradient(135deg, #5D3FD3 0%, #8A2BE2 100%);
+            --gradient-movement: linear-gradient(135deg, #7E57C2 0%, #5C6BC0 100%);
+            --gradient-obstacle: linear-gradient(135deg, #AB47BC 0%, #EC407A 100%);
+            --gradient-system: linear-gradient(135deg, #26A69A 0%, #66BB6A 100%);
         }
 
         body {
-            background: var(--gradient-lavender);
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
             min-height: 100vh;
             font-family: 'Poppins', sans-serif;
-            color: #6A5ACD;
+            color: #E6E6FA;
+            overflow-x: hidden;
         }
 
-        /* Efecto de partículas */
+        /* Efecto de partículas de fondo */
         body::before {
             content: '';
             position: fixed;
@@ -40,9 +49,9 @@
             width: 100%;
             height: 100%;
             background: 
-                radial-gradient(circle at 20% 80%, rgba(218, 112, 214, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(200, 162, 200, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(232, 215, 255, 0.1) 0%, transparent 50%);
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.05) 0%, transparent 50%);
             pointer-events: none;
             z-index: -1;
         }
@@ -63,47 +72,66 @@
         .hero-title {
             font-size: 3.5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #8A2BE2, #DA70D6);
+            background: var(--gradient-primary);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 1rem;
-            text-shadow: 0 4px 15px rgba(138, 43, 226, 0.2);
+            text-shadow: 0 4px 15px rgba(106, 13, 173, 0.3);
         }
 
         .hero-subtitle {
             font-size: 1.3rem;
-            color: #6A5ACD;
+            color: #B39DDB;
             margin-bottom: 3rem;
             font-weight: 300;
         }
 
-        /* Cards de opciones */
+        /* Cards con efecto glassmorphism */
         .option-card {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(15px);
-            border: 2px solid rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 25px;
             padding: 2.5rem;
             margin: 1rem;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            box-shadow: 0 10px 30px rgba(216, 191, 216, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             text-align: center;
             min-height: 320px;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .option-card:hover::before {
+            left: 100%;
         }
 
         .option-card:hover {
             transform: translateY(-15px) scale(1.05);
-            box-shadow: 0 25px 50px rgba(218, 112, 214, 0.3);
-            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 
+                0 20px 40px rgba(106, 13, 173, 0.3),
+                0 0 80px rgba(138, 43, 226, 0.2);
+            background: rgba(255, 255, 255, 0.12);
         }
 
         .option-icon {
             font-size: 4rem;
             margin-bottom: 1.5rem;
-            background: var(--gradient-mauve);
+            background: var(--gradient-primary);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -111,18 +139,18 @@
         .option-title {
             font-size: 1.8rem;
             font-weight: 600;
-            color: #8A2BE2;
+            color: #E6E6FA;
             margin-bottom: 1rem;
         }
 
         .option-description {
-            color: #6A5ACD;
+            color: #B39DDB;
             margin-bottom: 2rem;
             line-height: 1.6;
         }
 
         .btn-option {
-            background: var(--gradient-mauve);
+            background: var(--gradient-primary);
             border: none;
             border-radius: 15px;
             padding: 12px 30px;
@@ -130,13 +158,30 @@
             color: white;
             text-decoration: none;
             transition: all 0.3s ease;
-            box-shadow: 0 6px 20px rgba(218, 112, 214, 0.4);
+            box-shadow: 0 6px 20px rgba(106, 13, 173, 0.4);
             display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-option:hover::before {
+            left: 100%;
         }
 
         .btn-option:hover {
             transform: translateY(-3px);
-            box-shadow: 0 12px 25px rgba(218, 112, 214, 0.6);
+            box-shadow: 0 10px 25px rgba(106, 13, 173, 0.6);
             color: white;
         }
 
@@ -162,11 +207,64 @@
 
         /* Footer */
         .custom-footer {
-            background: var(--gradient-soft);
-            border-top: 2px solid rgba(255, 255, 255, 0.5);
-            color: #6A5ACD;
+            background: var(--gradient-dark);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #E6E6FA;
             padding: 2rem 0;
             margin-top: 4rem;
+        }
+
+        /* Stats cards */
+        .stats-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .stats-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Animaciones */
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(25px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+
+        @keyframes glow {
+            0%, 100% { 
+                box-shadow: 0 0 5px rgba(138, 43, 226, 0.5);
+            }
+            50% { 
+                box-shadow: 0 0 20px rgba(138, 43, 226, 0.8), 0 0 30px rgba(138, 43, 226, 0.6);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .glow {
+            animation: glow 2s ease-in-out infinite;
         }
 
         /* Responsive */
@@ -195,7 +293,7 @@
                     <div class="hero-content">
                         <!-- Logo/Título principal -->
                         <div class="mb-5">
-                            <i class="bi bi-car-front-fill display-1 floating" style="color: #DA70D6;"></i>
+                            <i class="bi bi-car-front-fill display-1 floating" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
                             <h1 class="hero-title">Sistema IoT Car</h1>
                             <p class="hero-subtitle">Control y monitoreo en tiempo real de tu vehículo inteligente</p>
                         </div>
@@ -240,20 +338,26 @@
                             <div class="col-lg-8 mx-auto">
                                 <div class="text-center">
                                     <div class="row">
-                                        <div class="col-md-4">
-                                            <i class="bi bi-lightning-charge-fill h3" style="color: #DA70D6;"></i>
-                                            <h6>Tiempo Real</h6>
-                                            <small class="text-muted">Comunicación instantánea</small>
+                                        <div class="col-md-4 mb-4">
+                                            <div class="stats-card">
+                                                <i class="bi bi-lightning-charge-fill stats-icon"></i>
+                                                <h6 class="text-white">Tiempo Real</h6>
+                                                <small class="text-muted">Comunicación instantánea</small>
+                                            </div>
                                         </div>
-                                        <div class="col-md-4">
-                                            <i class="bi bi-shield-check h3" style="color: #DA70D6;"></i>
-                                            <h6>Seguro</h6>
-                                            <small class="text-muted">Conexiones protegidas</small>
+                                        <div class="col-md-4 mb-4">
+                                            <div class="stats-card">
+                                                <i class="bi bi-shield-check stats-icon"></i>
+                                                <h6 class="text-white">Seguro</h6>
+                                                <small class="text-muted">Conexiones protegidas</small>
+                                            </div>
                                         </div>
-                                        <div class="col-md-4">
-                                            <i class="bi bi-phone h3" style="color: #DA70D6;"></i>
-                                            <h6>Responsive</h6>
-                                            <small class="text-muted">Funciona en cualquier dispositivo</small>
+                                        <div class="col-md-4 mb-4">
+                                            <div class="stats-card">
+                                                <i class="bi bi-phone stats-icon"></i>
+                                                <h6 class="text-white">Responsive</h6>
+                                                <small class="text-muted">Funciona en cualquier dispositivo</small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -270,18 +374,18 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h5>Denisse Moguel</h5>
+                    <h5 class="text-white">Denisse Moguel</h5>
                     <p class="mb-1">Sistema IoT Car</p>
                     <p class="mb-0">Proyecto de Control y Monitoreo</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p class="mb-0">Tecnologías Utilizadas</p>
+                    <p class="mb-0 text-white">Tecnologías Utilizadas</p>
                     <p class="mb-0">WebSocket • Bootstrap • JavaScript • Flask • MySQL</p>
                 </div>
             </div>
-            <hr class="my-3">
+            <hr class="my-3" style="border-color: rgba(255,255,255,0.1);">
             <div class="text-center">
-                <p class="mb-0">&copy; 2024 Denisse Moguel. Todos los derechos reservados.</p>
+                <p class="mb-0">&copy; 2025 Denisse Moguel. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
@@ -291,9 +395,8 @@
     
     <!-- Efectos JavaScript -->
     <script>
-        // Efecto de escritura para el título
+        // Efecto de aparición escalonada para las cards
         document.addEventListener('DOMContentLoaded', function() {
-            // Efecto de aparición escalonada para las cards
             const cards = document.querySelectorAll('.option-card');
             cards.forEach((card, index) => {
                 card.style.opacity = '0';
@@ -311,7 +414,7 @@
         });
 
         function createParticles() {
-            const colors = ['#E0B0FF', '#DA70D6', '#C9A0DC', '#D8BFD8'];
+            const colors = ['#6A0DAD', '#8A2BE2', '#9400D3', '#DA70D6'];
             const container = document.body;
             
             for (let i = 0; i < 15; i++) {
