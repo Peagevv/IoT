@@ -1,7 +1,7 @@
 class CarControlApp {
     constructor() {
         this.apiBaseUrl = 'http://98.91.159.217:5500';
-        this.wsUrl = 'ws://98.91.159.217:5500';
+        this.wsUrl = 'http://98.91.159.217:5500';
         this.ws = null;
         this.isConnected = false;
         this.currentDevice = 1; // Carro_Principal por defecto
