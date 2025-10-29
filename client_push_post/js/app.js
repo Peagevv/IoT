@@ -3,7 +3,7 @@ class CarControlApp {
         this.obstacleHistory = [];
         this.obstacleCount = 0; 
         this.lastObstacleResult = null;
-        this.apiBaseUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('http://98.91.159.217:5500');
+        this.apiBaseUrl = 'http://98.91.159.217:5500';
         this.wsUrl = null;
         this.ws = null;
         this.isConnected = false;
@@ -275,7 +275,7 @@ async sendObstacle() {
 
     try {
         // ✅ URL CORRECTA CON TU IP PÚBLICA
-        const response = await fetch('http://98.91.159.217:5500/api/obstaculo', {
+        const response = await fetch(`${this.apiBaseUrl}/api/obstaculo`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json' 
