@@ -1,7 +1,7 @@
 class CarMonitoringApp {
     constructor() {
-        this.apiBaseUrl = 'http://localhost:5500';
-        this.wsUrl = 'ws://localhost:5500';
+        this.apiBaseUrl = 'http://98.91.159.217:5500';
+        this.wsUrl = 'ws://98.91.159.217:5500';
         this.ws = null;
         this.isConnected = false;
         this.currentDevice = 1;
