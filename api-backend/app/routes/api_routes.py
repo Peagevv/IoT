@@ -32,7 +32,7 @@ def get_operations_catalog():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@api_bp.route('/devices', methods=['GET'])
+@api_bp.route('/devices', methods=['POST'])
 def get_devices():
     try:
         devices = CarModel.get_devices()
