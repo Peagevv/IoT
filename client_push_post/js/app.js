@@ -7,11 +7,14 @@ class CarControlApp {
         this.currentDevice = 1;
         this.demos = [];
         this.isDemoRunning = false;
+        this.commandsCount = 0;
+        this.startTime = Date.now();
         
         this.initializeEventListeners();
         this.loadDevices();
         this.loadDemos();
         this.connectWebSocket();
+        this.startCounters();
     }
 
     initializeEventListeners() {
@@ -37,6 +40,11 @@ class CarControlApp {
         // Botón gestionar demos
         document.getElementById('manageDemosBtn').addEventListener('click', () => {
             this.showDemoManager();
+        });
+
+        // Botón crear nueva demo
+        document.getElementById('createDemoBtn').addEventListener('click', () => {
+            this.showDemoCreator();
         });
 
         // Botón detener emergencia
@@ -77,6 +85,7 @@ class CarControlApp {
                 
                 if (data.status === 'success') {
                     this.demos = data.data;
+                    this.updateDemosCount();
                     return;
                 }
             }
@@ -113,6 +122,11 @@ class CarControlApp {
                 descripcion: 'Secuencia de exploración completa'
             }
         ];
+        this.updateDemosCount();
+    }
+
+    updateDemosCount() {
+        document.getElementById('demosCount').textContent = this.demos.length;
     }
 
     populateDeviceSelect(devices = null) {
@@ -147,6 +161,10 @@ class CarControlApp {
         
         this.showWsMessage(`✅ ${deviceName}: ${operationText}`, 'success');
         this.showAlert(`✅ Comando enviado: ${operationText}`, 'success');
+        
+        // Actualizar contador
+        this.commandsCount++;
+        document.getElementById('commandsCount').textContent = this.commandsCount;
 
         try {
             await fetch(`${this.apiBaseUrl}/api/movement?device_id=${this.currentDevice}&operation=${operation}`);
@@ -161,7 +179,8 @@ class CarControlApp {
             4: '↗️ Vuelta adelante derecha', 5: '↖️ Vuelta adelante izquierda',
             6: '↘️ Vuelta atrás derecha', 7: '↙️ Vuelta atrás izquierda',
             8: '↷ Giro 90° derecha', 9: '↶ Giro 90° izquierda',
-            10: '⟳ Giro 360° derecha', 11: '⟲ Giro 360° izquierda'
+            10: '⟳ Giro 360° derecha', 11: '⟲ Giro 360° izquierda',
+            12: '⭐ Movimiento Especial'
         };
         return operations[operation] || `Operación ${operation}`;
     }
@@ -219,6 +238,28 @@ class CarControlApp {
     createDemoSelectorContent() {
         const container = document.createElement('div');
         
+        if (this.demos.length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'text-center text-muted py-4';
+            emptyMessage.innerHTML = `
+                <i class="bi bi-inbox display-4"></i>
+                <p class="mt-3">No hay demos disponibles</p>
+                <button class="btn custom-btn-success" id="createFirstDemoBtn">
+                    <i class="bi bi-plus-circle"></i> Crear Primera Demo
+                </button>
+            `;
+            container.appendChild(emptyMessage);
+            
+            setTimeout(() => {
+                document.getElementById('createFirstDemoBtn').addEventListener('click', () => {
+                    this.closeModal('demoSelectorModal');
+                    this.showDemoCreator();
+                });
+            }, 100);
+            
+            return container;
+        }
+        
         const select = document.createElement('select');
         select.id = 'demoSelector';
         select.className = 'form-select custom-select mb-3';
@@ -270,8 +311,9 @@ class CarControlApp {
     async deleteSelectedDemo() {
         const selector = document.getElementById('demoSelector');
         const demoId = parseInt(selector.value);
+        const demo = this.demos.find(d => d.id_demo === demoId);
         
-        if (confirm('¿Estás segura de que quieres eliminar esta demo?')) {
+        if (confirm(`¿Estás segura de que quieres eliminar la demo "${demo.nombre_demo}"?`)) {
             try {
                 const response = await fetch(`${this.apiBaseUrl}/api/demos/${demoId}`, {
                     method: 'DELETE'
@@ -283,7 +325,11 @@ class CarControlApp {
                     this.closeModal('demoSelectorModal');
                 }
             } catch (error) {
-                this.showAlert('❌ Error eliminando demo', 'danger');
+                // Si falla el servidor, eliminar localmente
+                this.demos = this.demos.filter(d => d.id_demo !== demoId);
+                this.updateDemosCount();
+                this.showAlert('✅ Demo eliminada localmente', 'success');
+                this.closeModal('demoSelectorModal');
             }
         }
     }
@@ -337,16 +383,19 @@ class CarControlApp {
         const sequenceBuilder = document.createElement('div');
         sequenceBuilder.id = 'sequenceBuilder';
         sequenceBuilder.className = 'border rounded p-3 custom-message-container';
+        sequenceBuilder.style.maxHeight = '300px';
+        sequenceBuilder.style.overflowY = 'auto';
         
         const emptyMessage = document.createElement('div');
         emptyMessage.id = 'emptySequenceMessage';
-        emptyMessage.className = 'text-center text-muted';
+        emptyMessage.className = 'text-center text-muted py-4';
         
         const emptyText = document.createElement('p');
         emptyText.textContent = 'No hay movimientos en la secuencia';
+        emptyText.className = 'mb-3';
         
         const addBtn = this.createButton(
-            'Agregar Movimiento',
+            'Agregar Primer Movimiento',
             'custom-btn-info btn-sm',
             'bi-plus-circle',
             () => this.addMovementToSequence()
@@ -403,6 +452,9 @@ class CarControlApp {
         emptyMessage.classList.add('d-none');
         sequenceList.classList.remove('d-none');
         sequenceList.appendChild(movementStep);
+        
+        // Scroll to bottom
+        sequenceList.scrollTop = sequenceList.scrollHeight;
     }
 
     createMovementStep() {
@@ -410,7 +462,7 @@ class CarControlApp {
         step.className = 'movement-step card custom-card mb-2';
         
         const cardBody = document.createElement('div');
-        cardBody.className = 'card-body';
+        cardBody.className = 'card-body py-2';
         
         const row = document.createElement('div');
         row.className = 'row align-items-center';
@@ -422,7 +474,23 @@ class CarControlApp {
         const opSelect = document.createElement('select');
         opSelect.className = 'form-select custom-select movement-operation';
         
-        Object.entries(this.getOperationText).forEach(([key, value]) => {
+        // Agregar opciones de movimiento
+        const operations = {
+            1: '🚗 Adelante',
+            2: '🚗 Atrás', 
+            3: '🛑 Detener',
+            4: '↗️ Vuelta adelante derecha',
+            5: '↖️ Vuelta adelante izquierda',
+            6: '↘️ Vuelta atrás derecha',
+            7: '↙️ Vuelta atrás izquierda',
+            8: '↷ Giro 90° derecha',
+            9: '↶ Giro 90° izquierda',
+            10: '⟳ Giro 360° derecha',
+            11: '⟲ Giro 360° izquierda',
+            12: '⭐ Movimiento Especial'
+        };
+        
+        Object.entries(operations).forEach(([key, value]) => {
             const option = document.createElement('option');
             option.value = key;
             option.textContent = value;
@@ -435,20 +503,31 @@ class CarControlApp {
         const delayCol = document.createElement('div');
         delayCol.className = 'col-md-4';
         
+        const delayInputGroup = document.createElement('div');
+        delayInputGroup.className = 'input-group';
+        
         const delayInput = document.createElement('input');
         delayInput.type = 'number';
         delayInput.className = 'form-control custom-input movement-delay';
-        delayInput.placeholder = 'Delay (ms)';
+        delayInput.placeholder = 'Duración (ms)';
         delayInput.value = '2000';
+        delayInput.min = '500';
+        delayInput.step = '100';
         
-        delayCol.appendChild(delayInput);
+        const delaySpan = document.createElement('span');
+        delaySpan.className = 'input-group-text';
+        delaySpan.textContent = 'ms';
+        
+        delayInputGroup.appendChild(delayInput);
+        delayInputGroup.appendChild(delaySpan);
+        delayCol.appendChild(delayInputGroup);
         
         // Botón eliminar
         const deleteCol = document.createElement('div');
         deleteCol.className = 'col-md-3';
         
         const deleteBtn = this.createButton(
-            '',
+            'Eliminar',
             'custom-btn-danger btn-sm w-100',
             'bi-trash',
             () => {
@@ -487,11 +566,11 @@ class CarControlApp {
         document.querySelectorAll('.movement-step').forEach(step => {
             const operation = step.querySelector('.movement-operation').value;
             const delay = step.querySelector('.movement-delay').value;
-            const text = this.getOperationText(parseInt(operation));
+            const operationText = this.getOperationText(parseInt(operation));
             
             movements.push({
                 op: parseInt(operation),
-                text: text,
+                text: operationText,
                 delay: parseInt(delay)
             });
         });
@@ -501,18 +580,21 @@ class CarControlApp {
             return;
         }
         
+        const newDemo = {
+            id_demo: Date.now(), // ID temporal
+            nombre_demo: name,
+            descripcion: description,
+            secuencia: movements,
+            fecha_creacion: new Date().toISOString()
+        };
+        
         try {
             const response = await fetch(`${this.apiBaseUrl}/api/demos`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
                 },
-                body: JSON.stringify({
-                    nombre_demo: name,
-                    secuencia: movements,
-                    descripcion: description
-                })
+                body: JSON.stringify(newDemo)
             });
             
             if (response.ok) {
@@ -520,10 +602,14 @@ class CarControlApp {
                 await this.loadDemos();
                 this.closeModal('demoCreatorModal');
             } else {
-                this.showAlert('❌ Error guardando demo', 'danger');
+                throw new Error('Error del servidor');
             }
         } catch (error) {
-            this.showAlert('❌ Error de conexión', 'danger');
+            // Si falla el servidor, guardar localmente
+            this.demos.push(newDemo);
+            this.updateDemosCount();
+            this.showAlert('✅ Demo guardada localmente', 'success');
+            this.closeModal('demoCreatorModal');
         }
     }
 
@@ -548,7 +634,10 @@ class CarControlApp {
             'Crear Nueva Demo',
             'custom-btn-success',
             'bi-plus-circle',
-            () => this.showDemoCreator()
+            () => {
+                this.closeModal('demoManagerModal');
+                this.showDemoCreator();
+            }
         );
         
         createBtnContainer.appendChild(createBtn);
@@ -557,10 +646,21 @@ class CarControlApp {
         const demoList = document.createElement('div');
         demoList.className = 'list-group custom-list-group';
         
-        this.demos.forEach(demo => {
-            const demoItem = this.createDemoListItem(demo);
-            demoList.appendChild(demoItem);
-        });
+        if (this.demos.length === 0) {
+            const emptyItem = document.createElement('div');
+            emptyItem.className = 'list-group-item text-center text-muted py-4';
+            emptyItem.innerHTML = `
+                <i class="bi bi-inbox display-4"></i>
+                <p class="mt-3">No hay demos creadas</p>
+                <small>Crea tu primera demo para comenzar</small>
+            `;
+            demoList.appendChild(emptyItem);
+        } else {
+            this.demos.forEach(demo => {
+                const demoItem = this.createDemoListItem(demo);
+                demoList.appendChild(demoItem);
+            });
+        }
         
         container.appendChild(createBtnContainer);
         container.appendChild(demoList);
@@ -573,14 +673,16 @@ class CarControlApp {
         item.className = 'list-group-item custom-list-group-item';
         
         const header = document.createElement('div');
-        header.className = 'd-flex w-100 justify-content-between';
+        header.className = 'd-flex w-100 justify-content-between align-items-start';
         
         const title = document.createElement('h6');
-        title.className = 'mb-1';
+        title.className = 'mb-1 text-purple';
         title.textContent = demo.nombre_demo;
         
         const date = document.createElement('small');
-        date.textContent = new Date(demo.fecha_creacion).toLocaleDateString();
+        date.className = 'text-muted';
+        date.textContent = demo.fecha_creacion ? 
+            new Date(demo.fecha_creacion).toLocaleDateString() : 'Recién creada';
         
         header.appendChild(title);
         header.appendChild(date);
@@ -590,6 +692,7 @@ class CarControlApp {
         description.textContent = demo.descripcion;
         
         const sequenceInfo = document.createElement('small');
+        sequenceInfo.className = 'text-muted';
         sequenceInfo.textContent = `Secuencia: ${demo.secuencia.length} movimientos`;
         
         const buttonContainer = document.createElement('div');
@@ -599,7 +702,10 @@ class CarControlApp {
             'Ejecutar',
             'custom-btn-primary btn-sm me-1',
             'bi-play-fill',
-            () => this.startDemoMode(demo.secuencia)
+            () => {
+                this.closeModal('demoManagerModal');
+                this.startDemoMode(demo.secuencia);
+            }
         );
         
         const deleteBtn = this.createButton(
@@ -621,7 +727,10 @@ class CarControlApp {
     }
 
     async deleteDemo(demoId) {
-        if (confirm('¿Estás segura de que quieres eliminar esta demo?')) {
+        const demo = this.demos.find(d => d.id_demo === demoId);
+        if (!demo) return;
+        
+        if (confirm(`¿Estás segura de que quieres eliminar la demo "${demo.nombre_demo}"?`)) {
             try {
                 const response = await fetch(`${this.apiBaseUrl}/api/demos/${demoId}`, {
                     method: 'DELETE'
@@ -633,7 +742,11 @@ class CarControlApp {
                     this.closeModal('demoManagerModal');
                 }
             } catch (error) {
-                this.showAlert('❌ Error eliminando demo', 'danger');
+                // Si falla el servidor, eliminar localmente
+                this.demos = this.demos.filter(d => d.id_demo !== demoId);
+                this.updateDemosCount();
+                this.showAlert('✅ Demo eliminada localmente', 'success');
+                this.closeModal('demoManagerModal');
             }
         }
     }
@@ -731,6 +844,14 @@ class CarControlApp {
         group.appendChild(input);
         
         return group;
+    }
+
+    startCounters() {
+        // Contador de tiempo activo
+        setInterval(() => {
+            const uptime = Math.floor((Date.now() - this.startTime) / 1000);
+            document.getElementById('uptimeCounter').textContent = `${uptime}s`;
+        }, 1000);
     }
 
     // ========== MÉTODOS EXISTENTES ==========

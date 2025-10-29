@@ -370,6 +370,7 @@ body {
 .custom-message-container::-webkit-scrollbar-thumb:hover {
     background: var(--orchid-pastel);
 }
+
 /* Estilos adicionales para el HTML completo */
 .text-purple {
     color: #6A5ACD !important;
@@ -416,4 +417,30 @@ footer a {
 footer a:hover {
     color: #BA55D3 !important;
     text-decoration: underline;
+}
+
+/* Estilos para el creador de demos */
+.movement-step {
+    border-left: 4px solid #BA55D3 !important;
+}
+
+.input-group-text {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 2px solid rgba(216, 191, 216, 0.5) !important;
+    color: #6A5ACD !important;
+}
+
+/* Botón success personalizado */
+.custom-btn-success {
+    background: linear-gradient(135deg, #20c997 0%, #12a185 100%) !important;
+    border: 2px solid rgba(255, 255, 255, 0.8) !important;
+    color: white !important;
+    border-radius: 15px !important;
+    font-weight: 600;
+    transition: all 0.3s ease !important;
+}
+
+.custom-btn-success:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 8px 20px rgba(32, 201, 151, 0.4) !important;
 }
