@@ -292,7 +292,7 @@ async sendObstacle() {
         }
     } catch (error) {
         console.error('Error enviando obstáculo:', error);
-        this.showAlert('⚠️ Obstáculo guardado localmente (error de conexión)', 'warning');
+        
         this.showWsMessage(`⚠️ Error de conexión: ${error.message}`, 'warning');
     }
 }
