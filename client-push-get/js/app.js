@@ -1,6 +1,6 @@
 class CarMonitoringApp {
     constructor() {
-        this.apiBaseUrl = 'http://98.91.159.217:5500';
+        this.apiBaseUrl = 'https://corsproxy.io/?http://98.91.159.217:5500';
         this.wsUrl = null;
         this.ws = null;
         this.isConnected = false;
