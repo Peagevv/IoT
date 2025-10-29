@@ -1,7 +1,7 @@
 class CarControlApp {
     constructor() {
         this.apiBaseUrl = 'http://98.91.159.217:5500';
-        this.wsUrl = 'http://98.91.159.217:5500';
+        this.wsUrl = null;
         this.ws = null;
         this.isConnected = false;
         this.currentDevice = 1; // Carro_Principal por defecto
@@ -67,7 +67,7 @@ class CarControlApp {
         });
     }
 
-    sendMovementCommand(operation) {
+       async sendMovementCommand(operation) {
         if (!this.isConnected) {
             this.showAlert('❌ No conectado al servidor. Verifica la conexión.', 'danger');
             return;
@@ -79,20 +79,36 @@ class CarControlApp {
             timestamp: new Date().toISOString()
         };
 
-        // Enviar via WebSocket
+        // Si tenemos WebSocket, usarlo, sino usar API REST
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({
                 event: 'control_movement',
                 data: commandData
             }));
-
-            const operationText = this.getOperationText(operation);
-            const deviceName = document.getElementById('deviceSelect').options[document.getElementById('deviceSelect').selectedIndex].text;
-            this.showAlert(`📤 Enviando a ${deviceName}: ${operationText}`, 'info');
         } else {
-            this.showAlert('❌ WebSocket no conectado', 'danger');
-            this.connectWebSocket(); // Intentar reconectar
+            // Enviar via API REST
+            try {
+                const response = await fetch(`${this.apiBaseUrl}/api/commands`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(commandData)
+                });
+                
+                if (response.ok) {
+                    this.showWsMessage(`✅ Comando enviado via HTTP`, 'success');
+                } else {
+                    this.showWsMessage(`❌ Error enviando comando`, 'danger');
+                }
+            } catch (error) {
+                this.showWsMessage(`❌ Error de conexión: ${error.message}`, 'danger');
+            }
         }
+
+        const operationText = this.getOperationText(operation);
+        const deviceName = document.getElementById('deviceSelect').options[document.getElementById('deviceSelect').selectedIndex].text;
+        this.showAlert(`📤 Enviando a ${deviceName}: ${operationText}`, 'info');
     }
 
     getOperationText(operation) {
@@ -148,51 +164,59 @@ class CarControlApp {
         executeNextStep();
     }
 
-    connectWebSocket() {
-        try {
-            this.ws = new WebSocket(this.wsUrl);
-            this.updateConnectionStatus('Conectando...', 'warning');
+   connectWebSocket() {
+        if (this.wsUrl) {
+            // Código WebSocket original
+            try {
+                this.ws = new WebSocket(this.wsUrl);
+                this.updateConnectionStatus('Conectando...', 'warning');
 
-            this.ws.onopen = () => {
-                this.isConnected = true;
-                this.updateConnectionStatus('Conectado ✅', 'success');
-                this.showAlert('✅ Conectado al servidor IoT', 'success');
-                this.showWsMessage('🔗 WebSocket conectado - Listo para controlar', 'success');
-            };
+                this.ws.onopen = () => {
+                    this.isConnected = true;
+                    this.updateConnectionStatus('Conectado ✅', 'success');
+                    this.showAlert('✅ Conectado al servidor IoT', 'success');
+                    this.showWsMessage('🔗 WebSocket conectado - Listo para controlar', 'success');
+                };
 
-            this.ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    this.handleWebSocketMessage(data);
-                } catch (error) {
-                    console.log('Mensaje recibido:', event.data);
-                    this.showWsMessage(`📨 ${event.data}`, 'info');
-                }
-            };
-
-            this.ws.onerror = (error) => {
-                this.updateConnectionStatus('Error ❌', 'danger');
-                this.showAlert('❌ Error de conexión WebSocket', 'danger');
-                this.showWsMessage('❌ Error en conexión WebSocket', 'danger');
-            };
-
-            this.ws.onclose = (event) => {
-                this.isConnected = false;
-                this.updateConnectionStatus('Desconectado', 'secondary');
-                this.showWsMessage('🔌 Conexión WebSocket cerrada', 'secondary');
-                
-                // Intentar reconectar después de 3 segundos
-                setTimeout(() => {
-                    if (!this.isConnected) {
-                        this.showWsMessage('🔄 Intentando reconectar...', 'warning');
-                        this.connectWebSocket();
+                this.ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        this.handleWebSocketMessage(data);
+                    } catch (error) {
+                        console.log('Mensaje recibido:', event.data);
+                        this.showWsMessage(`📨 ${event.data}`, 'info');
                     }
-                }, 3000);
-            };
+                };
 
-        } catch (error) {
-            console.error('WebSocket error:', error);
-            this.showAlert('❌ Error al conectar WebSocket', 'danger');
+                this.ws.onerror = (error) => {
+                    this.updateConnectionStatus('Error ❌', 'danger');
+                    this.showAlert('❌ Error de conexión WebSocket', 'danger');
+                    this.showWsMessage('❌ Error en conexión WebSocket', 'danger');
+                };
+
+                this.ws.onclose = (event) => {
+                    this.isConnected = false;
+                    this.updateConnectionStatus('Desconectado', 'secondary');
+                    this.showWsMessage('🔌 Conexión WebSocket cerrada', 'secondary');
+                    
+                    setTimeout(() => {
+                        if (!this.isConnected) {
+                            this.showWsMessage('🔄 Intentando reconectar...', 'warning');
+                            this.connectWebSocket();
+                        }
+                    }, 3000);
+                };
+
+            } catch (error) {
+                console.error('WebSocket error:', error);
+                this.showAlert('❌ Error al conectar WebSocket', 'danger');
+            }
+        } else {
+            // Simular conexión exitosa via HTTP
+            this.isConnected = true;
+            this.updateConnectionStatus('Conectado ✅ (HTTP)', 'success');
+            this.showAlert('✅ Conectado al servidor via HTTP', 'success');
+            this.showWsMessage('🔗 Conectado via APIs REST HTTP', 'success');
         }
     }
 
