@@ -48,3 +48,21 @@ def health_check():
         'version': '1.0.0',
         'database': 'IoT'
     })
+@api_bp.route('/obstaculo', methods=['POST'])
+def recibir_obstaculo():
+    # ✅ SOLO PARA PRUEBAS - IMPRIME Y RESPONDE
+    data = request.get_json()
+    
+    print("🎯 DATOS RECIBIDOS:")
+    print(f"Dispositivo: {data.get('id_dispositivo')}")
+    print(f"Tipo: {data.get('tipo_obstaculo')}") 
+    print(f"Movimiento: {data.get('movimiento_realizado')}")
+    print(f"Resultado: {data.get('resultado')}")
+    print("---" * 10)
+    
+    # Respuesta inmediata sin base de datos
+    return jsonify({
+        "status": "success", 
+        "message": "✅ Obstáculo recibido - FUNCIONA!",
+        "tus_datos": data
+    })
