@@ -1,180 +1,108 @@
+
 class CarControlApp {
     constructor() {
-        this.obstacleHistory = [];
-        this.obstacleCount = 0; 
-        this.lastObstacleResult = null;
-        this.apiBaseUrl = 'http://98.91.159.217:5500';
-        this.wsUrl = null;
-        this.ws = null;
+        // ✅ CONFIGURACIÓN UNIFICADA
+        this.apiBaseUrl = 'http://98.91.159.217:5500';  // Sin CORS proxy
+        this.socket = null;  // Socket.IO instance
         this.isConnected = false;
         this.currentDevice = 1;
         this.demos = [];
-        this.devices = []; // Array para almacenar los dispositivos
+        this.devices = [];
         this.isDemoRunning = false;
         this.commandsCount = 0;
         this.startTime = Date.now();
+        
+        // Inicializar
         this.initializeEventListeners();
         this.loadDevices();
         this.loadDemos();
-        this.connectWebSocket();
+        this.connectSocketIO();  // ✅ Cambio importante
         this.startCounters();
     }
 
-    initializeEventListeners() {
-        // Botones de movimiento
-        document.querySelectorAll('.movement-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const operation = parseInt(e.target.closest('button').dataset.operation);
-                this.sendMovementCommand(operation);
+    // ========== WEBSOCKET CON SOCKET.IO ==========
+    
+    connectSocketIO() {
+        try {
+            // ✅ Usar Socket.IO en lugar de WebSocket nativo
+            this.socket = io(this.apiBaseUrl, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 10
             });
-        });
 
-        // Selector de dispositivo
-        document.getElementById('deviceSelect').addEventListener('change', (e) => {
-            this.currentDevice = parseInt(e.target.value);
-            const device = this.devices.find(d => d.id_dispositivo === this.currentDevice);
-            this.showAlert(`Cambiado a: ${device ? device.nombre_dispositivo : 'Carro_Principal'}`, 'info');
-        });
+            // Evento: Conectado
+            this.socket.on('connect', () => {
+                this.isConnected = true;
+                this.updateConnectionStatus('Conectado ✅', 'success');
+                this.showAlert('✅ Conectado al servidor IoT', 'success');
+                this.showWsMessage('🔗 Socket.IO conectado - Listo para controlar', 'success');
+                console.log('✅ Socket.IO conectado:', this.socket.id);
+            });
 
-        // Botón modo demo
-        document.getElementById('demoBtn').addEventListener('click', () => {
-            this.showDemoSelector();
-        });
+            // Evento: Estado de conexión
+            this.socket.on('connection_status', (data) => {
+                this.showWsMessage(`📡 ${data.message}`, 'info');
+            });
 
-        // Botón gestionar demos
-        document.getElementById('manageDemosBtn').addEventListener('click', () => {
-            this.showDemoManager();
-        });
-
-        // Botón crear nueva demo
-        document.getElementById('createDemoBtn').addEventListener('click', () => {
-            this.showDemoCreator();
-        });
-
-        // Botón gestionar carros
-        document.getElementById('manageCarsBtn').addEventListener('click', () => {
-            this.showCarManager();
-        });
-
-        // Botón detener emergencia
-        document.getElementById('stopBtn').addEventListener('click', () => {
-            this.stopAllDemos();
-            this.sendMovementCommand(3);
-            this.showAlert('🛑 PARADA DE EMERGENCIA ACTIVADA', 'danger');
-        });
-
-        // Botón modo obstáculos
-        document.getElementById('sendObstacleBtn').addEventListener('click', () => {
-        this.sendObstacle();
-        });
-    }
-
-    async loadDevices() {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/api/devices`);
-            
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            
-            const text = await response.text();
-            const data = JSON.parse(text);
-            
-            if (data.status === 'success') {
-                this.devices = data.data;
-                this.populateDeviceSelect(this.devices);
-            } else {
-                throw new Error(`Error del servidor: ${data.message}`);
-            }
-        } catch (error) {
-            console.error('Error loading devices:', error);
-            // Dispositivos por defecto
-            this.devices = [
-                {
-                    id_dispositivo: 1,
-                    nombre_dispositivo: 'Carro_Principal',
-                    descripcion: 'Carro principal de control',
-                    estado: 'activo',
-                    fecha_creacion: new Date().toISOString()
-                }
-            ];
-            this.populateDeviceSelect(this.devices);
-        }
-    }
-
-    async loadDemos() {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/api/demos`);
-            
-            if (response.ok) {
-                const text = await response.text();
-                const data = JSON.parse(text);
-                
+            // Evento: Confirmación de comando (si el servidor lo emite)
+            this.socket.on('command_confirmation', (data) => {
                 if (data.status === 'success') {
-                    this.demos = data.data;
-                    this.updateDemosCount();
-                    return;
+                    this.showWsMessage(`✅ ${data.message}`, 'success');
+                } else {
+                    this.showWsMessage(`❌ ${data.message}`, 'danger');
                 }
-            }
-        } catch (error) {
-            console.log('No se pudieron cargar demos del servidor, usando demos locales');
-        }
-        
-        // Fallback: demos locales
-        this.demos = [
-            {
-                id_demo: 1,
-                nombre_demo: 'Demo Básico',
-                secuencia: [
-                    {op: 1, text: 'Adelante', delay: 2000},
-                    {op: 8, text: 'Giro derecha', delay: 2000},
-                    {op: 1, text: 'Adelante', delay: 2000},
-                    {op: 9, text: 'Giro izquierda', delay: 2000},
-                    {op: 1, text: 'Adelante', delay: 2000},
-                    {op: 3, text: 'Detener', delay: 1000}
-                ],
-                descripcion: 'Secuencia básica de movimiento'
-            },
-            {
-                id_demo: 2,
-                nombre_demo: 'Exploración',
-                secuencia: [
-                    {op: 1, text: 'Adelante', delay: 1500},
-                    {op: 10, text: 'Giro 360', delay: 3000},
-                    {op: 1, text: 'Adelante', delay: 1500},
-                    {op: 4, text: 'Vuelta derecha', delay: 2000},
-                    {op: 1, text: 'Adelante', delay: 1500},
-                    {op: 3, text: 'Detener', delay: 1000}
-                ],
-                descripcion: 'Secuencia de exploración completa'
-            }
-        ];
-        this.updateDemosCount();
-    }
-
-    updateDemosCount() {
-        document.getElementById('demosCount').textContent = this.demos.length;
-    }
-
-    populateDeviceSelect(devices = null) {
-        const select = document.getElementById('deviceSelect');
-        select.innerHTML = '';
-        
-        if (devices && devices.length > 0) {
-            devices.forEach(device => {
-                const option = document.createElement('option');
-                option.value = device.id_dispositivo;
-                option.textContent = device.nombre_dispositivo;
-                if (device.id_dispositivo === this.currentDevice) option.selected = true;
-                select.appendChild(option);
             });
-        } else {
-            const option = document.createElement('option');
-            option.value = 1;
-            option.textContent = 'Carro_Principal';
-            option.selected = true;
-            select.appendChild(option);
+
+            // ✅ NUEVO: Escuchar movimientos de OTRAS apps
+            this.socket.on('movement_command', (data) => {
+                const movement = data.data;
+                this.showWsMessage(
+                    `🚗 Movimiento detectado: ${movement.status_texto} (${movement.nombre_dispositivo})`,
+                    'info'
+                );
+            });
+
+            // ✅ NUEVO: Escuchar obstáculos de OTRAS apps
+            this.socket.on('obstacle_detected', (data) => {
+                const obstacle = data.data;
+                this.showWsMessage(
+                    `🚨 Obstáculo detectado: ${obstacle.status_texto} (${obstacle.nombre_dispositivo})`,
+                    'warning'
+                );
+            });
+
+            // Evento: Desconectado
+            this.socket.on('disconnect', () => {
+                this.isConnected = false;
+                this.updateConnectionStatus('Desconectado', 'secondary');
+                this.showWsMessage('🔌 Socket.IO desconectado', 'secondary');
+                console.log('❌ Socket.IO desconectado');
+            });
+
+            // Evento: Error
+            this.socket.on('connect_error', (error) => {
+                this.updateConnectionStatus('Error ❌', 'danger');
+                this.showWsMessage('❌ Error de conexión Socket.IO', 'danger');
+                console.error('Socket.IO error:', error);
+            });
+
+            // Heartbeat cada 30 segundos
+            setInterval(() => {
+                if (this.isConnected) {
+                    this.socket.emit('ping');
+                }
+            }, 30000);
+
+        } catch (error) {
+            console.error('Error inicializando Socket.IO:', error);
+            this.showAlert('❌ Error al conectar Socket.IO', 'danger');
         }
     }
 
+    // ========== ENVÍO DE COMANDOS (REST API) ==========
+    
     async sendMovementCommand(operation) {
         if (!this.isConnected) {
             this.showAlert('❌ No conectado al servidor.', 'danger');
@@ -192,9 +120,107 @@ class CarControlApp {
         document.getElementById('commandsCount').textContent = this.commandsCount;
 
         try {
-            await fetch(`${this.apiBaseUrl}/api/movement?device_id=${this.currentDevice}&operation=${operation}`);
+            // ✅ ENVIAR VIA REST API (el backend hace el broadcast)
+            const response = await fetch(`${this.apiBaseUrl}/api/movement`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id_dispositivo: this.currentDevice,
+                    status_operacion: operation
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                this.showWsMessage('✅ Movimiento registrado en servidor', 'success');
+            }
+
         } catch (error) {
-            // Ignorar errores silenciosamente
+            console.error('Error enviando movimiento:', error);
+            this.showAlert('⚠️ Error al enviar comando', 'warning');
+        }
+    }
+
+    async sendObstacle() {
+        if (!this.isConnected) {
+            this.showAlert('❌ No conectado al servidor.', 'danger');
+            return;
+        }
+
+        const tipo = document.getElementById('tipoObstaculo').value || "Izquierda";
+        const deviceName = document.getElementById('deviceSelect').options[document.getElementById('deviceSelect').selectedIndex].text;
+        
+        // Determinar resultado basado en el tipo de obstáculo
+        let resultado;
+        let alertType;
+        
+        switch(tipo) {
+            case 'Izquierda':
+                resultado = "Giro a la derecha realizado";
+                alertType = 'warning';
+                break;
+            case 'Derecha':
+                resultado = "Giro a la izquierda realizado";
+                alertType = 'warning';
+                break;
+            case 'Frente':
+                resultado = "Marcha atrás realizada";
+                alertType = 'danger';
+                break;
+            case 'Atrás':
+                resultado = "Aceleración hacia adelante";
+                alertType = 'info';
+                break;
+            default:
+                resultado = "Ruta despejada";
+                alertType = 'success';
+        }
+
+        // Mostrar alerta inmediatamente
+        this.showAlert(`🚨 Obstáculo ${tipo} detectado: ${resultado}`, alertType);
+        this.showWsMessage(`🚨 ${deviceName}: Obstáculo ${tipo} - ${resultado}`, alertType);
+
+        // Actualizar contador
+        this.commandsCount++;
+        document.getElementById('commandsCount').textContent = this.commandsCount;
+
+        try {
+            // ✅ ENVIAR VIA REST API (el backend hace el broadcast)
+            const response = await fetch(`${this.apiBaseUrl}/api/obstacle`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({
+                    id_dispositivo: this.currentDevice,
+                    tipo_obstaculo: tipo,
+                    movimiento_realizado: resultado,
+                    resultado: resultado
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                this.showAlert('✅ Obstáculo registrado correctamente', 'success');
+                this.showWsMessage('✅ Obstáculo registrado en servidor', 'success');
+            }
+
+        } catch (error) {
+            console.error('Error enviando obstáculo:', error);
+            this.showAlert('⚠️ Error al registrar obstáculo', 'warning');
+            this.showWsMessage(`⚠️ Error: ${error.message}`, 'warning');
         }
     }
 

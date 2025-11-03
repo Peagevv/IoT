@@ -12,7 +12,7 @@ def get_db_connection():
             port=int(os.environ.get('DB_PORT', 3306)),
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor,
-            ssl=None,  # Deshabilitar SSL para desarrollo local
+            sl=None,  # Deshabilitar SSL para desarrollo local
             auth_plugin_map={},  # Evitar problemas de autenticación
             autocommit=True
         )
