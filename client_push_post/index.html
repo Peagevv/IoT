@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Socket.IO Client -->
-<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Carro IoT - Denisse Moguel</title>
@@ -12,7 +10,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Estilos personalizados -->
     <link rel="stylesheet" href="css/styles.css">
-    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
 </head>
 <body>
     <!-- Navbar -->
@@ -56,7 +53,7 @@
                             <div class="col-md-6">
                                 <label class="form-label"><strong>Estado:</strong></label>
                                 <div>
-                                    <span id="connectionStatus" class="badge custom-badge">Desconectado</span>
+                                    <span id="connectionStatusDisplay" class="badge custom-badge">Desconectado</span>
                                 </div>
                             </div>
                         </div>
@@ -73,9 +70,9 @@
                             
                             <!-- Fila: Izquierda - Detener - Derecha -->
                             <div class="mb-3">
-                                <button class="btn custom-btn-warning movement-btn me-2" data-operation="8">
+                                <button class="btn custom-btn-warning movement-btn me-2" data-operation="9">
                                     <i class="bi bi-arrow-left"></i><br>
-                                    Izquierda
+                                    Giro Izq 90°
                                 </button>
                                 
                                 <button class="btn custom-btn-danger movement-btn me-2" data-operation="3">
@@ -83,9 +80,9 @@
                                     Detener
                                 </button>
                                 
-                                <button class="btn custom-btn-warning movement-btn" data-operation="9">
+                                <button class="btn custom-btn-warning movement-btn" data-operation="8">
                                     <i class="bi bi-arrow-right"></i><br>
-                                    Derecha
+                                    Giro Der 90°
                                 </button>
                             </div>
                             
@@ -100,38 +97,22 @@
 
                         <!-- Controles Avanzados -->
                         <div class="row mt-4">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <button class="btn custom-btn-info movement-btn w-100" data-operation="4">
                                     <i class="bi bi-arrow-up-right"></i><br>
-                                    Vuelta Der.
+                                    Vuelta Adel. Der.
                                 </button>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <button class="btn custom-btn-info movement-btn w-100" data-operation="5">
                                     <i class="bi bi-arrow-up-left"></i><br>
-                                    Vuelta Izq.
+                                    Vuelta Adel. Izq.
                                 </button>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <button class="btn custom-btn-secondary movement-btn w-100" data-operation="10">
                                     <i class="bi bi-arrow-clockwise"></i><br>
-                                    Giro 360°
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Controles Adicionales -->
-                        <div class="row mt-3">
-                            <div class="col-md-3">
-                                <button class="btn custom-btn-info movement-btn w-100" data-operation="6">
-                                    <i class="bi bi-arrow-down-right"></i><br>
-                                    V. Atrás Der.
-                                </button>
-                            </div>
-                            <div class="col-md-3">
-                                <button class="btn custom-btn-info movement-btn w-100" data-operation="7">
-                                    <i class="bi bi-arrow-down-left"></i><br>
-                                    V. Atrás Izq.
+                                    Giro 360° Der.
                                 </button>
                             </div>
                             <div class="col-md-3">
@@ -140,10 +121,20 @@
                                     Giro 360° Izq.
                                 </button>
                             </div>
-                            <div class="col-md-3">
-                                <button class="btn custom-btn-warning movement-btn w-100" data-operation="12">
-                                    <i class="bi bi-star-fill"></i><br>
-                                    Especial
+                        </div>
+
+                        <!-- Fila adicional para vueltas atrás -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <button class="btn custom-btn-info movement-btn w-100" data-operation="6">
+                                    <i class="bi bi-arrow-down-right"></i><br>
+                                    Vuelta Atrás Der.
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn custom-btn-info movement-btn w-100" data-operation="7">
+                                    <i class="bi bi-arrow-down-left"></i><br>
+                                    Vuelta Atrás Izq.
                                 </button>
                             </div>
                         </div>
@@ -164,49 +155,12 @@
                         <button id="demoBtn" class="btn custom-btn-demo w-100 mb-2">
                             <i class="bi bi-robot"></i> Iniciar Demo
                         </button>
-                        <button id="manageDemosBtn" class="btn custom-btn-secondary w-100 mb-2">
-                            <i class="bi bi-gear"></i> Gestionar Demos
-                        </button>
-                        <button id="createDemoBtn" class="btn custom-btn-success w-100 mb-2">
-                            <i class="bi bi-plus-circle"></i> Crear Nueva Demo
-                        </button>
-                        <button id="manageCarsBtn" class="btn custom-btn-warning w-100 mb-2">
-                            <i class="bi bi-car-front"></i> Gestionar Carros
-                        </button>
-                        <button id="stopBtn" class="btn custom-btn-stop w-100 mb-2">
+                        <button id="stopBtn" class="btn custom-btn-stop w-100">
                             <i class="bi bi-exclamation-triangle"></i> Parada Emergencia
                         </button>
-                       <!-- Agregar esta sección después del botón de Parada Emergencia -->
-<div class="card custom-card mt-3">
-    <div class="card-header custom-card-header-warning">
-        <h5 class="mb-0">
-            <i class="bi bi-shield-exclamation"></i> Sistema de Obstáculos
-        </h5>
-    </div>
-        <div class="card-body">
-            <div class="mb-3">
-                <label class="form-label"><strong>Tipo de Obstáculo:</strong></label>
-                <select id="tipoObstaculo" class="form-select custom-select">
-                    <option value="Izquierda">Izquierda</option>
-                    <option value="Derecha">Derecha</option>
-                    <option value="Frente">Frente</option>
-                    <option value="Atrás">Atrás</option>
-                    <option value="General">General</option>
-                </select>
-            </div>
-            <button id="sendObstacleBtn" class="btn custom-btn-obstacle w-100">
-                <i class="bi bi-send"></i> Registrar Obstáculo
-            </button>
-            <div class="mt-3">
-                <small class="text-muted">
-                    Registra obstáculos detectados y el sistema responderá automáticamente.
-                </small>
-            </div>
-        </div>
-    </div>
                         <div class="mt-3">
                             <small class="text-muted">
-                                Controla el carro, gestiona obstáculos y crea secuencias automáticas.
+                                El modo demo ejecutará una secuencia automática de movimientos.
                             </small>
                         </div>
                     </div>
@@ -224,48 +178,6 @@
                             <div class="text-center text-muted py-5">
                                 <i class="bi bi-chat-square-text display-6"></i>
                                 <p class="mt-2">Los mensajes aparecerán aquí</p>
-                                <small class="text-muted">Conectando al servidor...</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Información del Sistema -->
-                <div class="card custom-card">
-                    <div class="card-header custom-card-header-secondary">
-                        <h5 class="mb-0">
-                            <i class="bi bi-info-circle"></i> Información del Sistema
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-6 mb-3">
-                                <div class="p-3 bg-light rounded">
-                                    <i class="bi bi-cpu display-6 text-purple"></i>
-                                    <h6 class="mt-2 mb-0">AWS EC2</h6>
-                                    <small class="text-muted">Backend</small>
-                                </div>
-                            </div>
-                            <div class="col-6 mb-3">
-                                <div class="p-3 bg-light rounded">
-                                    <i class="bi bi-database display-6 text-purple"></i>
-                                    <h6 class="mt-2 mb-0">AWS RDS</h6>
-                                    <small class="text-muted">MySQL</small>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="p-3 bg-light rounded">
-                                    <i class="bi bi-cloud display-6 text-purple"></i>
-                                    <h6 class="mt-2 mb-0">GitHub</h6>
-                                    <small class="text-muted">Pages</small>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="p-3 bg-light rounded">
-                                    <i class="bi bi-wifi display-6 text-purple"></i>
-                                    <h6 class="mt-2 mb-0">WebSocket</h6>
-                                    <small class="text-muted">Tiempo Real</small>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -285,38 +197,34 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-3">
-                                <strong class="text-purple">Básicos:</strong>
-                                <ul class="list-unstyled mt-2">
-                                    <li><span class="badge bg-primary me-2">1</span> Adelante</li>
-                                    <li><span class="badge bg-primary me-2">2</span> Atrás</li>
-                                    <li><span class="badge bg-danger me-2">3</span> Detener</li>
+                                <strong>Básicos:</strong>
+                                <ul class="list-unstyled">
+                                    <li>1 - Adelante</li>
+                                    <li>2 - Atrás</li>
+                                    <li>3 - Detener</li>
                                 </ul>
                             </div>
                             <div class="col-md-3">
-                                <strong class="text-purple">Giros:</strong>
-                                <ul class="list-unstyled mt-2">
-                                    <li><span class="badge bg-warning me-2">8</span> Giro 90° derecha</li>
-                                    <li><span class="badge bg-warning me-2">9</span> Giro 90° izquierda</li>
-                                    <li><span class="badge bg-secondary me-2">10</span> Giro 360° derecha</li>
-                                    <li><span class="badge bg-secondary me-2">11</span> Giro 360° izquierda</li>
+                                <strong>Giros 90°:</strong>
+                                <ul class="list-unstyled">
+                                    <li>8 - Giro 90° derecha</li>
+                                    <li>9 - Giro 90° izquierda</li>
                                 </ul>
                             </div>
                             <div class="col-md-3">
-                                <strong class="text-purple">Vueltas:</strong>
-                                <ul class="list-unstyled mt-2">
-                                    <li><span class="badge bg-info me-2">4</span> Vuelta adelante derecha</li>
-                                    <li><span class="badge bg-info me-2">5</span> Vuelta adelante izquierda</li>
-                                    <li><span class="badge bg-info me-2">6</span> Vuelta atrás derecha</li>
-                                    <li><span class="badge bg-info me-2">7</span> Vuelta atrás izquierda</li>
+                                <strong>Vueltas Adelante:</strong>
+                                <ul class="list-unstyled">
+                                    <li>4 - Vuelta adelante derecha</li>
+                                    <li>5 - Vuelta adelante izquierda</li>
                                 </ul>
                             </div>
                             <div class="col-md-3">
-                                <strong class="text-purple">Características:</strong>
-                                <ul class="list-unstyled mt-2">
-                                    <li><i class="bi bi-check-circle text-success me-2"></i>Control en tiempo real</li>
-                                    <li><i class="bi bi-check-circle text-success me-2"></i>Múltiples dispositivos</li>
-                                    <li><i class="bi bi-check-circle text-success me-2"></i>Detección de obstáculos</li>
-                                    <li><i class="bi bi-check-circle text-success me-2"></i>Secuencias programables</li>
+                                <strong>Especiales:</strong>
+                                <ul class="list-unstyled">
+                                    <li>6 - Vuelta atrás derecha</li>
+                                    <li>7 - Vuelta atrás izquierda</li>
+                                    <li>10 - Giro 360° derecha</li>
+                                    <li>11 - Giro 360° izquierda</li>
                                 </ul>
                             </div>
                         </div>
@@ -324,98 +232,33 @@
                 </div>
             </div>
         </div>
-
-        <!-- Estadísticas en Tiempo Real -->
-        <div class="row mt-4">
-            <div class="col-md-3">
-                <div class="card custom-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-lightning-charge display-6 text-warning"></i>
-                        <h4 class="mt-2" id="commandsCount">0</h4>
-                        <p class="mb-0 text-muted">Comandos Enviados</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card custom-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-clock display-6 text-info"></i>
-                        <h4 class="mt-2" id="uptimeCounter">0s</h4>
-                        <p class="mb-0 text-muted">Tiempo Activo</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card custom-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-robot display-6 text-success"></i>
-                        <h4 class="mt-2" id="demosCount">2</h4>
-                        <p class="mb-0 text-muted">Demos Disponibles</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card custom-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-shield-check display-6 text-primary"></i>
-                        <h4 class="mt-2" id="statusIndicator">Online</h4>
-                        <p class="mb-0 text-muted">Estado del Sistema</p>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Footer -->
-    <footer class="custom-footer mt-5">
+    <footer class="custom-footer">
         <div class="container py-4">
-            <div class="row align-items-center">
+            <div class="row">
                 <div class="col-md-6">
-                    <h5 class="mb-2">Denisse Moguel</h5>
-                    <p class="mb-1">
-                        <i class="bi bi-laptop"></i> Control Carro IoT - Sistema de Control en Tiempo Real
-                    </p>
-                    <p class="mb-0">
-                        <i class="bi bi-mortarboard"></i> Proyecto de Arquitectura IoT
-                    </p>
+                    <h5>Denisse Moguel</h5>
+                    <p class="mb-1">Control Carro IoT</p>
+                    <p class="mb-0">Sistema de Control en Tiempo Real</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p class="mb-2"><strong>Tecnologías Implementadas:</strong></p>
-                    <div class="tech-badges">
-                        <span class="badge custom-badge me-1">AWS EC2</span>
-                        <span class="badge custom-badge me-1">AWS RDS</span>
-                        <span class="badge custom-badge me-1">Flask</span>
-                        <span class="badge custom-badge me-1">WebSocket</span>
-                        <span class="badge custom-badge me-1">Bootstrap 5</span>
-                        <span class="badge custom-badge me-1">JavaScript</span>
-                        <span class="badge custom-badge">GitHub Pages</span>
-                    </div>
+                    <p class="mb-0">Tecnologías:</p>
+                    <p class="mb-0">Socket.IO • Bootstrap • JavaScript • Flask</p>
                 </div>
             </div>
             <hr class="my-3">
-            <div class="row">
-                <div class="col-md-8">
-                    <p class="mb-0">
-                        <i class="bi bi-github"></i> Repositorio: 
-                        <a href="https://github.com/Peagevv/IoT" class="text-purple" target="_blank">github.com/Peagevv/IoT</a>
-                    </p>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <p class="mb-0">
-                        <i class="bi bi-server"></i> Backend: 
-                        <span class="text-purple">98.91.159.217:5500</span>
-                    </p>
-                </div>
-            </div>
-            <div class="text-center mt-3">
+            <div class="text-center">
                 <p class="mb-0">&copy; 2025 Denisse Moguel. Todos los derechos reservados.</p>
-                <small class="text-muted">Sistema IoT desarrollado para el control y monitoreo de dispositivos en tiempo real</small>
             </div>
         </div>
     </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <!-- Aplicación JavaScript -->
     <script src="js/app.js"></script>
 </body>
