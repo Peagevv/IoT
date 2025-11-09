@@ -221,7 +221,11 @@ class CarControlApp {
         }
 
         container.innerHTML = sequences.map(seq => {
-            const operationsArray = seq.operaciones ? seq.operaciones.split(',').map(op => parseInt(op.trim())) : [];
+            // Obtener las operaciones como array (compatible con ambas estructuras)
+            const operationsArray = Array.isArray(seq.operaciones) ? 
+                seq.operaciones : 
+                (seq.operaciones ? seq.operaciones.split(',').map(op => parseInt(op.trim())) : []);
+            
             const operationsText = operationsArray.map(op => this.getOperationText(op)).join(', ');
             const deviceName = this.devices.find(d => d.id_dispositivo === seq.id_dispositivo)?.nombre_dispositivo || 'Desconocido';
             
@@ -265,7 +269,15 @@ class CarControlApp {
             document.getElementById('sequenceId').value = sequence.id_secuencia;
             document.getElementById('sequenceName').value = sequence.nombre_secuencia;
             document.getElementById('sequenceDevice').value = sequence.id_dispositivo;
-            document.getElementById('sequenceOperations').value = sequence.operaciones;
+            
+            // Convertir operaciones a string separado por comas (compatible con ambas estructuras)
+            let operationsString;
+            if (Array.isArray(sequence.operaciones)) {
+                operationsString = sequence.operaciones.join(',');
+            } else {
+                operationsString = sequence.operaciones || '';
+            }
+            document.getElementById('sequenceOperations').value = operationsString;
         } else {
             document.getElementById('sequenceModalTitle').textContent = 'Nueva Secuencia';
             document.getElementById('sequenceForm').reset();
@@ -288,7 +300,7 @@ class CarControlApp {
         }
 
         // Validar que las operaciones sean números separados por comas
-        const opsArray = operations.split(',').map(op => op.trim());
+        const opsArray = operations.split(',').map(op => parseInt(op.trim()));
         const validOps = opsArray.every(op => !isNaN(op) && op >= 1 && op <= 11);
         
         if (!validOps) {
@@ -296,15 +308,25 @@ class CarControlApp {
             return;
         }
 
+        // Preparar datos para la estructura de base de datos
         const sequenceData = {
-            nombre_secuencia: name,
             id_dispositivo: device,
-            operaciones: operations
+            nombre_secuencia: name,
+            movimientos: opsArray  // Enviar como array para la nueva estructura
         };
 
         try {
-            const url = id ? `${this.apiBaseUrl}/api/sequences/${id}` : `${this.apiBaseUrl}/api/sequences`;
-            const method = id ? 'PUT' : 'POST';
+            let url, method;
+            
+            if (id) {
+                // Para editar
+                url = `${this.apiBaseUrl}/api/sequences/${id}`;
+                method = 'PUT';
+            } else {
+                // Para crear nueva
+                url = `${this.apiBaseUrl}/api/sequences`;
+                method = 'POST';
+            }
 
             const response = await fetch(url, {
                 method: method,
@@ -378,7 +400,13 @@ class CarControlApp {
             document.getElementById('deviceSelect').dispatchEvent(new Event('change'));
         }
 
-        const operations = sequence.operaciones.split(',').map(op => parseInt(op.trim()));
+        // Obtener operaciones (compatible con ambas estructuras)
+        let operations;
+        if (Array.isArray(sequence.operaciones)) {
+            operations = sequence.operaciones;
+        } else {
+            operations = sequence.operaciones ? sequence.operaciones.split(',').map(op => parseInt(op.trim())) : [];
+        }
         
         this.showAlert(`🚀 Ejecutando secuencia: ${sequence.nombre_secuencia}`, 'info');
         this.showWsMessage(`🎬 Iniciando secuencia: ${sequence.nombre_secuencia}`, 'info');
