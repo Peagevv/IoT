@@ -1,7 +1,7 @@
 class CarControlApp {
     constructor() {
         // IMPORTANTE: Cambia esta IP por la IP PÚBLICA de tu EC2
-        this.apiBaseUrl = 'http://98.91.159.217'; // ← CAMBIAR AQUÍ
+        this.apiBaseUrl = 'http://98.91.159.217:5500'; // CON puerto
         this.socket = null;
         this.isConnected = false;
         this.currentDevice = 1;
