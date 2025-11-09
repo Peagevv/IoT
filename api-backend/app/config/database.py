@@ -1,19 +1,22 @@
 import pymysql
 from flask import g
 import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 def get_db_connection():
     if 'db' not in g:
         g.db = pymysql.connect(
-            host=os.environ.get('DB_HOST', 'localhost'),
-            user=os.environ.get('DB_USER', 'root'),
-            password=os.environ.get('DB_PASSWORD', 'Avec86sdU1@'),
-            database=os.environ.get('DB_NAME', 'IoT'),
-            port=int(os.environ.get('DB_PORT', 3306)),
+            host=os.getenv('DB_HOST', 'localhost'),
+            user=os.getenv('DB_USER', 'root'),
+            password=os.getenv('DB_PASSWORD', 'Admin12345#!'),
+            database=os.getenv('DB_NAME', 'IoT'),
+            port=int(os.getenv('DB_PORT', 3306)),
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor,
-            sl=None,  # Deshabilitar SSL para desarrollo local
-            auth_plugin_map={},  # Evitar problemas de autenticación
+            ssl=None,  # Cambiar a {'ssl': True} en producción con Aurora
             autocommit=True
         )
     return g.db

@@ -1,64 +1,97 @@
+from flask import jsonify, request
 from app.models.car_model import CarModel
-from app.models.sensor_model import SensorModel
-from app import socketio
-from flask_socketio import emit
 
-@socketio.on('connect')
-def handle_connect():
-    print('Cliente WebSocket conectado')
-    emit('connection_status', {'status': 'connected', 'message': 'Conectado al servidor IoT'})
+class CarController:
+    @staticmethod
+    def send_command():
+        """Enviar un comando al carrito"""
+        try:
+            data = request.get_json()
+            
+            if not data or 'status_operacion' not in data:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'status_operacion es requerido'
+                }), 400
+            
+            id_dispositivo = data.get('id_dispositivo', 1)
+            status_operacion = data.get('status_operacion')
+            
+            # Validar que el status_operacion existe
+            operations = CarModel.get_operations_catalog()
+            valid_ops = [op['status_operacion'] for op in operations]
+            
+            if status_operacion not in valid_ops:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Operación inválida. Operaciones válidas: {valid_ops}'
+                }), 400
+            
+            # Guardar el comando
+            id_evento = CarModel.save_command(id_dispositivo, status_operacion)
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Comando enviado correctamente',
+                'data': {
+                    'id_evento': id_evento,
+                    'id_dispositivo': id_dispositivo,
+                    'status_operacion': status_operacion
+                }
+            }), 201
+            
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'message': f'Error al enviar comando: {str(e)}'
+            }), 500
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('Cliente WebSocket desconectado')
+    @staticmethod
+    def get_recent_commands():
+        """Obtener comandos recientes"""
+        try:
+            id_dispositivo = request.args.get('device_id', 1, type=int)
+            limit = request.args.get('limit', 10, type=int)
+            
+            commands = CarModel.get_recent_commands(id_dispositivo, limit)
+            
+            return jsonify({
+                'status': 'success',
+                'data': commands
+            })
+            
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'message': str(e)
+            }), 500
 
-@socketio.on('control_movement')
-def handle_movement_control(data):
-    try:
-        id_dispositivo = data.get('id_dispositivo', 1)
-        status_operacion = data.get('status_operacion')
-        
-        print(f'Movimiento recibido - Dispositivo: {id_dispositivo}, Operación: {status_operacion}')
-        
-        # Guardar en base de datos
-        command_id = CarModel.save_command(id_dispositivo, status_operacion)
-        
-        # Transmitir comando a todos los clientes
-        emit('movement_command', {
-            'id_evento': command_id,
-            'id_dispositivo': id_dispositivo,
-            'status_operacion': status_operacion,
-            'timestamp': data.get('timestamp')
-        }, broadcast=True)
-        
-        # Confirmación al emisor
-        emit('command_confirmation', {
-            'status': 'success',
-            'message': f'Movimiento {status_operacion} guardado correctamente'
-        })
-        
-    except Exception as e:
-        emit('command_confirmation', {
-            'status': 'error',
-            'message': f'Error: {str(e)}'
-        })
+    @staticmethod
+    def get_operations_catalog():
+        """Obtener catálogo de operaciones disponibles"""
+        try:
+            operations = CarModel.get_operations_catalog()
+            return jsonify({
+                'status': 'success',
+                'data': operations
+            })
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'message': str(e)
+            }), 500
 
-@socketio.on('get_operations_catalog')
-def handle_get_operations():
-    try:
-        operations = CarModel.get_operations_catalog()
-        emit('operations_catalog', {
-            'operations': operations
-        })
-    except Exception as e:
-        emit('error', {'message': f'Error obteniendo operaciones: {str(e)}'})
-
-@socketio.on('get_devices')
-def handle_get_devices():
-    try:
-        devices = CarModel.get_devices()
-        emit('devices_list', {
-            'devices': devices
-        })
-    except Exception as e:
-        emit('error', {'message': f'Error obteniendo dispositivos: {str(e)}'})
+    @staticmethod
+    def get_devices():
+        """Obtener lista de dispositivos"""
+        try:
+            devices = CarModel.get_devices()
+            return jsonify({
+                'status': 'success',
+                'data': devices
+            })
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'message': str(e)
+            }), 500
