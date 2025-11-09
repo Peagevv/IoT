@@ -31,141 +31,192 @@
         <!-- Alertas -->
         <div id="alertsContainer"></div>
 
-        <!-- Panel de Control -->
-        <div class="row">
-            <!-- Controles de Movimiento -->
-            <div class="col-lg-8">
-                <div class="card custom-card">
-                    <div class="card-header custom-card-header-success">
-                        <h4 class="mb-0">
-                            <i class="bi bi-joystick"></i> Controles de Movimiento
-                        </h4>
-                    </div>
-                    <div class="card-body">
-                        <!-- Selector de Dispositivo -->
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <label class="form-label"><strong>Seleccionar Carro:</strong></label>
-                                <select id="deviceSelect" class="form-select custom-select">
-                                    <option value="1">Carro_Principal</option>
-                                    <option value="2">Carro_Secundario</option>
-                                </select>
+        <!-- ============ SECCIÓN: CONTROL ============ -->
+        <section id="control-section">
+            <div class="row">
+                <!-- Controles de Movimiento -->
+                <div class="col-lg-8">
+                    <div class="card custom-card">
+                        <div class="card-header custom-card-header-success">
+                            <h4 class="mb-0">
+                                <i class="bi bi-joystick"></i> Controles de Movimiento
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <!-- Selector de Dispositivo -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label"><strong>Seleccionar Carro:</strong></label>
+                                    <select id="deviceSelect" class="form-select custom-select">
+                                        <option value="1">Cargando...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label"><strong>Estado:</strong></label>
+                                    <div>
+                                        <span id="connectionStatusDisplay" class="badge custom-badge">Desconectado</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label"><strong>Estado:</strong></label>
-                                <div>
-                                    <span id="connectionStatus" class="badge custom-badge">Desconectado</span>
+
+                            <!-- Botones de Movimiento -->
+                            <div class="text-center">
+                                <div class="mb-3">
+                                    <button class="btn custom-btn-primary movement-btn" data-operation="1">
+                                        <i class="bi bi-arrow-up"></i><br>Adelante
+                                    </button>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <button class="btn custom-btn-warning movement-btn me-2" data-operation="9">
+                                        <i class="bi bi-arrow-left"></i><br>Giro Izq 90°
+                                    </button>
+                                    
+                                    <button class="btn custom-btn-danger movement-btn me-2" data-operation="3">
+                                        <i class="bi bi-stop-fill"></i><br>Detener
+                                    </button>
+                                    
+                                    <button class="btn custom-btn-warning movement-btn" data-operation="8">
+                                        <i class="bi bi-arrow-right"></i><br>Giro Der 90°
+                                    </button>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <button class="btn custom-btn-primary movement-btn" data-operation="2">
+                                        <i class="bi bi-arrow-down"></i><br>Atrás
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Controles Avanzados -->
+                            <div class="row mt-4">
+                                <div class="col-md-3">
+                                    <button class="btn custom-btn-info movement-btn w-100" data-operation="4">
+                                        <i class="bi bi-arrow-up-right"></i><br>Vuelta Der.
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button class="btn custom-btn-info movement-btn w-100" data-operation="5">
+                                        <i class="bi bi-arrow-up-left"></i><br>Vuelta Izq.
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button class="btn custom-btn-secondary movement-btn w-100" data-operation="10">
+                                        <i class="bi bi-arrow-clockwise"></i><br>Giro 360° Der.
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button class="btn custom-btn-secondary movement-btn w-100" data-operation="11">
+                                        <i class="bi bi-arrow-counterclockwise"></i><br>Giro 360° Izq.
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Botones de Movimiento -->
-                        <div class="text-center">
-                            <!-- Fila: Adelante -->
-                            <div class="mb-3">
-                                <button class="btn custom-btn-primary movement-btn" data-operation="1">
-                                    <i class="bi bi-arrow-up"></i><br>
-                                    Adelante
-                                </button>
-                            </div>
-                            
-                            <!-- Fila: Izquierda - Detener - Derecha -->
-                            <div class="mb-3">
-                                <button class="btn custom-btn-warning movement-btn me-2" data-operation="8">
-                                    <i class="bi bi-arrow-left"></i><br>
-                                    Izquierda
-                                </button>
-                                
-                                <button class="btn custom-btn-danger movement-btn me-2" data-operation="3">
-                                    <i class="bi bi-stop-fill"></i><br>
-                                    Detener
-                                </button>
-                                
-                                <button class="btn custom-btn-warning movement-btn" data-operation="9">
-                                    <i class="bi bi-arrow-right"></i><br>
-                                    Derecha
-                                </button>
-                            </div>
-                            
-                            <!-- Fila: Atrás -->
-                            <div class="mb-3">
-                                <button class="btn custom-btn-primary movement-btn" data-operation="2">
-                                    <i class="bi bi-arrow-down"></i><br>
-                                    Atrás
-                                </button>
+                <!-- Panel de Modos y Log -->
+                <div class="col-lg-4">
+                    <!-- Modo Demo -->
+                    <div class="card custom-card">
+                        <div class="card-header custom-card-header-info">
+                            <h5 class="mb-0">
+                                <i class="bi bi-play-circle"></i> Modo Demo
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <button id="demoBtn" class="btn custom-btn-demo w-100 mb-2">
+                                <i class="bi bi-robot"></i> Iniciar Demo Rápido
+                            </button>
+                            <button id="stopBtn" class="btn custom-btn-stop w-100">
+                                <i class="bi bi-exclamation-triangle"></i> Parada Emergencia
+                            </button>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    Demo rápido: secuencia predefinida de movimientos.
+                                </small>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Controles Avanzados -->
-                        <div class="row mt-4">
-                            <div class="col-md-4">
-                                <button class="btn custom-btn-info movement-btn w-100" data-operation="4">
-                                    <i class="bi bi-arrow-up-right"></i><br>
-                                    Vuelta Der.
-                                </button>
-                            </div>
-                            <div class="col-md-4">
-                                <button class="btn custom-btn-info movement-btn w-100" data-operation="5">
-                                    <i class="bi bi-arrow-up-left"></i><br>
-                                    Vuelta Izq.
-                                </button>
-                            </div>
-                            <div class="col-md-4">
-                                <button class="btn custom-btn-secondary movement-btn w-100" data-operation="10">
-                                    <i class="bi bi-arrow-clockwise"></i><br>
-                                    Giro 360°
-                                </button>
+                    <!-- Log de Actividad -->
+                    <div class="card custom-card">
+                        <div class="card-header custom-card-header-dark">
+                            <h5 class="mb-0">
+                                <i class="bi bi-list-check"></i> Log de Actividad
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="wsMessages" class="custom-message-container">
+                                <div class="text-center text-muted py-5">
+                                    <i class="bi bi-chat-square-text display-6"></i>
+                                    <p class="mt-2">Los mensajes aparecerán aquí</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Panel de Modos y Monitoreo -->
-            <div class="col-lg-4">
-                <!-- Modo Demo -->
-                <div class="card custom-card">
-                    <div class="card-header custom-card-header-info">
-                        <h5 class="mb-0">
-                            <i class="bi bi-play-circle"></i> Modos Automáticos
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <button id="demoBtn" class="btn custom-btn-demo w-100 mb-2">
-                            <i class="bi bi-robot"></i> Iniciar Demo
-                        </button>
-                        <button id="stopBtn" class="btn custom-btn-stop w-100">
-                            <i class="bi bi-exclamation-triangle"></i> Parada Emergencia
-                        </button>
-                        <div class="mt-3">
-                            <small class="text-muted">
-                                El modo demo ejecutará una secuencia automática de movimientos.
-                            </small>
+        <!-- ============ SECCIÓN: SECUENCIAS ============ -->
+        <section id="sequences-section" class="mt-5">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card custom-card">
+                        <div class="card-header custom-card-header-info">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">
+                                    <i class="bi bi-collection-play"></i> Gestión de Secuencias
+                                </h4>
+                                <button class="btn custom-btn-demo" id="newSequenceBtn">
+                                    <i class="bi bi-plus-circle"></i> Nueva Secuencia
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Log de Actividad -->
-                <div class="card custom-card">
-                    <div class="card-header custom-card-header-dark">
-                        <h5 class="mb-0">
-                            <i class="bi bi-list-check"></i> Log de Actividad
-                        </h5>
-                    </div>
-                    <div class="card-body p-0">
-                        <div id="wsMessages" class="custom-message-container">
-                            <div class="text-center text-muted py-5">
-                                <i class="bi bi-chat-square-text display-6"></i>
-                                <p class="mt-2">Los mensajes aparecerán aquí</p>
+                        <div class="card-body">
+                            <div id="sequencesList" class="row">
+                                <div class="col-12 text-center text-muted py-5">
+                                    <i class="bi bi-hourglass-split display-4"></i>
+                                    <p class="mt-3">Cargando secuencias...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <!-- ============ SECCIÓN: DISPOSITIVOS ============ -->
+        <section id="devices-section" class="mt-5">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card custom-card">
+                        <div class="card-header custom-card-header-success">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">
+                                    <i class="bi bi-car-front"></i> Gestión de Dispositivos
+                                </h4>
+                                <button class="btn custom-btn-demo" id="newDeviceBtn">
+                                    <i class="bi bi-plus-circle"></i> Nuevo Dispositivo
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="devicesList" class="row">
+                                <div class="col-12 text-center text-muted py-5">
+                                    <i class="bi bi-hourglass-split display-4"></i>
+                                    <p class="mt-3">Cargando dispositivos...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- Información de Operaciones -->
-        <div class="row mt-4">
+        <div class="row mt-5">
             <div class="col-12">
                 <div class="card custom-card">
                     <div class="card-header custom-card-header-secondary">
@@ -184,11 +235,10 @@
                                 </ul>
                             </div>
                             <div class="col-md-3">
-                                <strong>Giros:</strong>
+                                <strong>Giros 90°:</strong>
                                 <ul class="list-unstyled">
                                     <li>8 - Giro 90° derecha</li>
                                     <li>9 - Giro 90° izquierda</li>
-                                    <li>10 - Giro 360° derecha</li>
                                 </ul>
                             </div>
                             <div class="col-md-3">
@@ -197,12 +247,13 @@
                                     <li>4 - Vuelta adelante derecha</li>
                                     <li>5 - Vuelta adelante izquierda</li>
                                     <li>6 - Vuelta atrás derecha</li>
+                                    <li>7 - Vuelta atrás izquierda</li>
                                 </ul>
                             </div>
                             <div class="col-md-3">
                                 <strong>Especiales:</strong>
                                 <ul class="list-unstyled">
-                                    <li>7 - Vuelta atrás izquierda</li>
+                                    <li>10 - Giro 360° derecha</li>
                                     <li>11 - Giro 360° izquierda</li>
                                 </ul>
                             </div>
@@ -213,31 +264,112 @@
         </div>
     </div>
 
+    <!-- ============ MODALES ============ -->
+
+    <!-- Modal: Nueva/Editar Secuencia -->
+    <div class="modal fade" id="sequenceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header custom-card-header-info">
+                    <h5 class="modal-title">
+                        <i class="bi bi-collection-play"></i> <span id="sequenceModalTitle">Nueva Secuencia</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="sequenceForm">
+                        <input type="hidden" id="sequenceId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Nombre de la Secuencia:</strong></label>
+                            <input type="text" class="form-control" id="sequenceName" required placeholder="Ej: Recorrido Cuadrado">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Dispositivo:</strong></label>
+                            <select class="form-select" id="sequenceDevice" required>
+                                <option value="">Seleccionar...</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Operaciones (separadas por comas):</strong></label>
+                            <input type="text" class="form-control" id="sequenceOperations" required 
+                                   placeholder="Ej: 1,8,1,9,1,8,1,9,3">
+                            <small class="text-muted">Ingresa los números de operación separados por comas. Ejemplo: 1,8,1,9,3</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn custom-btn-demo" id="saveSequenceBtn">
+                        <i class="bi bi-save"></i> Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Nuevo/Editar Dispositivo -->
+    <div class="modal fade" id="deviceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header custom-card-header-success">
+                    <h5 class="modal-title">
+                        <i class="bi bi-car-front"></i> <span id="deviceModalTitle">Nuevo Dispositivo</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="deviceForm">
+                        <input type="hidden" id="deviceId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Nombre del Dispositivo:</strong></label>
+                            <input type="text" class="form-control" id="deviceName" required placeholder="Ej: Carro_Deportivo">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Descripción:</strong></label>
+                            <textarea class="form-control" id="deviceDescription" rows="3" 
+                                      placeholder="Descripción opcional del dispositivo"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn custom-btn-demo" id="saveDeviceBtn">
+                        <i class="bi bi-save"></i> Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
-    <footer class="custom-footer">
+    <footer class="custom-footer mt-5">
         <div class="container py-4">
             <div class="row">
                 <div class="col-md-6">
                     <h5>Denisse Moguel</h5>
                     <p class="mb-1">Control Carro IoT</p>
-                    <p class="mb-0">Sistema de Control en Tiempo Real</p>
+                    <p class="mb-0">Sistema de Control en Tiempo Real con CRUD</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <p class="mb-0">Tecnologías:</p>
-                    <p class="mb-0">WebSocket • Bootstrap • JavaScript • Flask</p>
+                    <p class="mb-0">Socket.IO • Bootstrap • JavaScript • Flask • MySQL</p>
                 </div>
             </div>
             <hr class="my-3">
             <div class="text-center">
-                <p class="mb-0">&copy; 2024 Denisse Moguel. Todos los derechos reservados.</p>
+                <p class="mb-0">&copy; 2025 Denisse Moguel. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <!-- Aplicación JavaScript -->
     <script src="js/app.js"></script>
 </body>
 </html>

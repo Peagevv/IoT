@@ -5,13 +5,17 @@ class CarControlApp {
         this.isConnected = false;
         this.currentDevice = 1;
         this.isDemoRunning = false;
+        this.devices = [];
+        this.sequences = [];
         
         this.initializeEventListeners();
         this.loadDevices();
-        this.connectSocketIO(); // Cambiar a Socket.IO
+        this.loadSequences();
+        this.connectSocketIO();
     }
 
     initializeEventListeners() {
+        // Botones de movimiento
         document.querySelectorAll('.movement-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const operation = parseInt(e.target.closest('button').dataset.operation);
@@ -19,6 +23,7 @@ class CarControlApp {
             });
         });
 
+        // Selector de dispositivo
         document.getElementById('deviceSelect').addEventListener('change', (e) => {
             const oldDevice = this.currentDevice;
             this.currentDevice = parseInt(e.target.value);
@@ -31,6 +36,7 @@ class CarControlApp {
             this.showAlert(`Cambiado a: ${e.target.options[e.target.selectedIndex].text}`, 'info');
         });
 
+        // Botón modo demo
         document.getElementById('demoBtn').addEventListener('click', () => {
             if (!this.isDemoRunning) {
                 this.startDemoMode();
@@ -39,12 +45,30 @@ class CarControlApp {
             }
         });
 
+        // Botón detener emergencia
         document.getElementById('stopBtn').addEventListener('click', () => {
             this.isDemoRunning = false;
             this.sendMovementCommand(3);
             this.showAlert('🛑 PARADA DE EMERGENCIA ACTIVADA', 'danger');
         });
+
+        // Botón nueva secuencia
+        document.getElementById('newSequenceBtn').addEventListener('click', () => {
+            this.openSequenceModal();
+        });
+
+        // Botón nuevo dispositivo
+        document.getElementById('newDeviceBtn').addEventListener('click', () => {
+            this.openDeviceModal();
+        });
+
+        // Botón guardar secuencia
+        document.getElementById('saveSequenceBtn').addEventListener('click', () => {
+            this.saveSequence();
+        });
     }
+
+    // ==================== DISPOSITIVOS ====================
 
     async loadDevices() {
         try {
@@ -52,7 +76,9 @@ class CarControlApp {
             const data = await response.json();
             
             if (data.status === 'success') {
+                this.devices = data.data;
                 this.populateDeviceSelect(data.data);
+                this.renderDevicesList(data.data);
                 this.showWsMessage('✅ Dispositivos cargados correctamente', 'success');
             }
         } catch (error) {
@@ -62,28 +88,326 @@ class CarControlApp {
     }
 
     populateDeviceSelect(devices) {
-        const select = document.getElementById('deviceSelect');
-        select.innerHTML = '';
+        const selects = [
+            document.getElementById('deviceSelect'),
+            document.getElementById('sequenceDevice')
+        ];
         
-        if (devices.length === 0) {
-            const option = document.createElement('option');
-            option.value = 1;
-            option.textContent = 'Carro_Principal (ID: 1)';
-            select.appendChild(option);
-            return;
-        }
-        
-        devices.forEach(device => {
-            const option = document.createElement('option');
-            option.value = device.id_dispositivo;
-            option.textContent = `${device.nombre_dispositivo} (ID: ${device.id_dispositivo})`;
-            if (device.id_dispositivo === this.currentDevice) {
-                option.selected = true;
+        selects.forEach(select => {
+            if (!select) return;
+            
+            select.innerHTML = '';
+            
+            if (devices.length === 0) {
+                const option = document.createElement('option');
+                option.value = 1;
+                option.textContent = 'Carro_Principal (ID: 1)';
+                select.appendChild(option);
+                return;
             }
-            select.appendChild(option);
+            
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.id_dispositivo;
+                option.textContent = `${device.nombre_dispositivo} (ID: ${device.id_dispositivo})`;
+                if (device.id_dispositivo === this.currentDevice) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
         });
     }
 
+    renderDevicesList(devices) {
+        const container = document.getElementById('devicesList');
+        
+        if (devices.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center text-muted py-5">
+                    <i class="bi bi-car-front display-4"></i>
+                    <p class="mt-3">No hay dispositivos registrados</p>
+                    <button class="btn custom-btn-demo" onclick="app.openDeviceModal()">
+                        <i class="bi bi-plus-circle"></i> Agregar Primer Dispositivo
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = devices.map(device => `
+            <div class="col-md-4 mb-3">
+                <div class="card custom-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-car-front-fill text-primary"></i> ${device.nombre_dispositivo}
+                        </h5>
+                        <p class="card-text">
+                            <strong>ID:</strong> ${device.id_dispositivo}<br>
+                            <strong>Estado:</strong> 
+                            <span class="badge ${device.id_dispositivo === this.currentDevice ? 'bg-success' : 'bg-secondary'}">
+                                ${device.id_dispositivo === this.currentDevice ? 'Activo' : 'Disponible'}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0">
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-sm custom-btn-primary" onclick="app.selectDevice(${device.id_dispositivo})">
+                                <i class="bi bi-check-circle"></i> Seleccionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    selectDevice(deviceId) {
+        document.getElementById('deviceSelect').value = deviceId;
+        document.getElementById('deviceSelect').dispatchEvent(new Event('change'));
+        
+        // Scroll al panel de control
+        document.getElementById('control-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    openDeviceModal(device = null) {
+        const modal = new bootstrap.Modal(document.getElementById('deviceModal'));
+        
+        if (device) {
+            document.getElementById('deviceModalTitle').textContent = 'Editar Dispositivo';
+            document.getElementById('deviceId').value = device.id_dispositivo;
+            document.getElementById('deviceName').value = device.nombre_dispositivo;
+            document.getElementById('deviceDescription').value = device.descripcion || '';
+        } else {
+            document.getElementById('deviceModalTitle').textContent = 'Nuevo Dispositivo';
+            document.getElementById('deviceForm').reset();
+            document.getElementById('deviceId').value = '';
+        }
+        
+        modal.show();
+    }
+
+    // ==================== SECUENCIAS ====================
+
+    async loadSequences() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/sequences`);
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                this.sequences = data.data;
+                this.renderSequencesList(data.data);
+                this.showWsMessage('✅ Secuencias cargadas correctamente', 'success');
+            }
+        } catch (error) {
+            console.error('Error loading sequences:', error);
+            this.showAlert('⚠️ Error al cargar secuencias', 'warning');
+        }
+    }
+
+    renderSequencesList(sequences) {
+        const container = document.getElementById('sequencesList');
+        
+        if (sequences.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center text-muted py-5">
+                    <i class="bi bi-collection-play display-4"></i>
+                    <p class="mt-3">No hay secuencias guardadas</p>
+                    <button class="btn custom-btn-demo" onclick="app.openSequenceModal()">
+                        <i class="bi bi-plus-circle"></i> Crear Primera Secuencia
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = sequences.map(seq => {
+            const operationsArray = seq.operaciones ? seq.operaciones.split(',').map(op => parseInt(op.trim())) : [];
+            const operationsText = operationsArray.map(op => this.getOperationText(op)).join(', ');
+            const deviceName = this.devices.find(d => d.id_dispositivo === seq.id_dispositivo)?.nombre_dispositivo || 'Desconocido';
+            
+            return `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card custom-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-collection-play text-info"></i> ${seq.nombre_secuencia}
+                            </h5>
+                            <p class="card-text">
+                                <strong>Dispositivo:</strong> ${deviceName}<br>
+                                <strong>Operaciones:</strong> ${operationsArray.length}<br>
+                                <small class="text-muted">${operationsText.substring(0, 60)}${operationsText.length > 60 ? '...' : ''}</small>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent border-0">
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-sm custom-btn-demo" onclick="app.executeSequence(${seq.id_secuencia})">
+                                    <i class="bi bi-play-fill"></i> Ejecutar
+                                </button>
+                                <button class="btn btn-sm custom-btn-primary" onclick="app.openSequenceModal(${JSON.stringify(seq).replace(/"/g, '&quot;')})">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
+                                <button class="btn btn-sm custom-btn-stop" onclick="app.deleteSequence(${seq.id_secuencia})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    openSequenceModal(sequence = null) {
+        const modal = new bootstrap.Modal(document.getElementById('sequenceModal'));
+        
+        if (sequence) {
+            document.getElementById('sequenceModalTitle').textContent = 'Editar Secuencia';
+            document.getElementById('sequenceId').value = sequence.id_secuencia;
+            document.getElementById('sequenceName').value = sequence.nombre_secuencia;
+            document.getElementById('sequenceDevice').value = sequence.id_dispositivo;
+            document.getElementById('sequenceOperations').value = sequence.operaciones;
+        } else {
+            document.getElementById('sequenceModalTitle').textContent = 'Nueva Secuencia';
+            document.getElementById('sequenceForm').reset();
+            document.getElementById('sequenceId').value = '';
+            document.getElementById('sequenceDevice').value = this.currentDevice;
+        }
+        
+        modal.show();
+    }
+
+    async saveSequence() {
+        const id = document.getElementById('sequenceId').value;
+        const name = document.getElementById('sequenceName').value.trim();
+        const device = parseInt(document.getElementById('sequenceDevice').value);
+        const operations = document.getElementById('sequenceOperations').value.trim();
+
+        if (!name || !device || !operations) {
+            this.showAlert('⚠️ Por favor completa todos los campos', 'warning');
+            return;
+        }
+
+        // Validar que las operaciones sean números separados por comas
+        const opsArray = operations.split(',').map(op => op.trim());
+        const validOps = opsArray.every(op => !isNaN(op) && op >= 1 && op <= 11);
+        
+        if (!validOps) {
+            this.showAlert('⚠️ Las operaciones deben ser números entre 1 y 11 separados por comas', 'warning');
+            return;
+        }
+
+        const sequenceData = {
+            nombre_secuencia: name,
+            id_dispositivo: device,
+            operaciones: operations
+        };
+
+        try {
+            const url = id ? `${this.apiBaseUrl}/api/sequences/${id}` : `${this.apiBaseUrl}/api/sequences`;
+            const method = id ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(sequenceData)
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                this.showAlert(`✅ Secuencia ${id ? 'actualizada' : 'creada'} correctamente`, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('sequenceModal')).hide();
+                await this.loadSequences();
+            } else {
+                this.showAlert(`❌ Error: ${data.message}`, 'danger');
+            }
+        } catch (error) {
+            console.error('Error saving sequence:', error);
+            this.showAlert('⚠️ Error al guardar secuencia', 'danger');
+        }
+    }
+
+    async deleteSequence(id) {
+        if (!confirm('¿Estás seguro de eliminar esta secuencia?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/sequences/${id}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                this.showAlert('✅ Secuencia eliminada', 'success');
+                await this.loadSequences();
+            } else {
+                this.showAlert(`❌ Error: ${data.message}`, 'danger');
+            }
+        } catch (error) {
+            console.error('Error deleting sequence:', error);
+            this.showAlert('⚠️ Error al eliminar secuencia', 'danger');
+        }
+    }
+
+    async executeSequence(sequenceId) {
+        if (!this.isConnected) {
+            this.showAlert('❌ No conectado al servidor', 'danger');
+            return;
+        }
+
+        if (this.isDemoRunning) {
+            this.showAlert('⚠️ Ya hay una secuencia en ejecución', 'warning');
+            return;
+        }
+
+        const sequence = this.sequences.find(s => s.id_secuencia === sequenceId);
+        if (!sequence) {
+            this.showAlert('❌ Secuencia no encontrada', 'danger');
+            return;
+        }
+
+        this.isDemoRunning = true;
+        
+        // Cambiar al dispositivo de la secuencia si es diferente
+        if (sequence.id_dispositivo !== this.currentDevice) {
+            document.getElementById('deviceSelect').value = sequence.id_dispositivo;
+            document.getElementById('deviceSelect').dispatchEvent(new Event('change'));
+        }
+
+        const operations = sequence.operaciones.split(',').map(op => parseInt(op.trim()));
+        
+        this.showAlert(`🚀 Ejecutando secuencia: ${sequence.nombre_secuencia}`, 'info');
+        this.showWsMessage(`🎬 Iniciando secuencia: ${sequence.nombre_secuencia}`, 'info');
+
+        for (let i = 0; i < operations.length; i++) {
+            if (!this.isDemoRunning) {
+                this.showWsMessage('⏹️ Secuencia cancelada', 'warning');
+                break;
+            }
+
+            const op = operations[i];
+            await this.sendMovementCommand(op);
+            const opText = this.getOperationText(op);
+            this.showWsMessage(`🎬 [${i + 1}/${operations.length}] ${opText}`, 'info');
+            
+            // Esperar 2 segundos entre operaciones
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        if (this.isDemoRunning) {
+            this.showAlert(`✅ Secuencia completada: ${sequence.nombre_secuencia}`, 'success');
+            this.showWsMessage('✅ Secuencia finalizada', 'success');
+        }
+
+        this.isDemoRunning = false;
+    }
+
+    // ==================== SOCKET.IO ====================
+    
     connectSocketIO() {
         try {
             this.updateConnectionStatus('Conectando...', 'warning');
@@ -138,12 +462,20 @@ class CarControlApp {
                 }
             });
 
+            this.socket.on('sequence_update', (data) => {
+                if (data.type === 'sequence_created' || data.type === 'sequence_updated' || data.type === 'sequence_deleted') {
+                    this.loadSequences();
+                }
+            });
+
         } catch (error) {
             console.error('Socket.IO error:', error);
             this.showAlert('❌ Error al inicializar Socket.IO', 'danger');
         }
     }
 
+    // ==================== COMANDOS ====================
+    
     async sendMovementCommand(operation) {
         if (!this.isConnected) {
             this.showAlert('❌ No conectado al servidor. Esperando conexión...', 'danger');
@@ -201,6 +533,8 @@ class CarControlApp {
         return operations[operation] || `Operación ${operation}`;
     }
 
+    // ==================== DEMO RÁPIDO ====================
+    
     async startDemoMode() {
         if (!this.isConnected) {
             this.showAlert('❌ No conectado al servidor', 'danger');
@@ -246,8 +580,10 @@ class CarControlApp {
         this.isDemoRunning = false;
     }
 
+    // ==================== UI HELPERS ====================
+    
     updateConnectionStatus(text, type) {
-        const statusElements = document.querySelectorAll('#connectionStatus');
+        const statusElements = document.querySelectorAll('#connectionStatus, #connectionStatusDisplay');
         const badgeClass = {
             'success': 'custom-badge',
             'warning': 'badge bg-warning',
@@ -299,7 +635,10 @@ class CarControlApp {
     }
 }
 
+// Variable global para acceder desde HTML
+let app;
+
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Iniciando Control Carro IoT...');
-    new CarControlApp();
+    console.log('🚀 Iniciando Control Carro IoT con CRUD...');
+    app = new CarControlApp();
 });
