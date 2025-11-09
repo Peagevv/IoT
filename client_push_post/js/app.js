@@ -1,18 +1,17 @@
 class CarControlApp {
     constructor() {
         this.apiBaseUrl = 'http://98.91.159.217:5500';
-        this.wsUrl = 'ws://localhost:5500';
-        this.ws = null;
+        this.socket = null;
         this.isConnected = false;
-        this.currentDevice = 1; // Carro_Principal por defecto
+        this.currentDevice = 1;
+        this.isDemoRunning = false;
         
         this.initializeEventListeners();
         this.loadDevices();
-        this.connectWebSocket(); // Conectar automáticamente al cargar
+        this.connectSocketIO(); // Cambiar a Socket.IO
     }
 
     initializeEventListeners() {
-        // Botones de movimiento
         document.querySelectorAll('.movement-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const operation = parseInt(e.target.closest('button').dataset.operation);
@@ -20,20 +19,29 @@ class CarControlApp {
             });
         });
 
-        // Selector de dispositivo
         document.getElementById('deviceSelect').addEventListener('change', (e) => {
+            const oldDevice = this.currentDevice;
             this.currentDevice = parseInt(e.target.value);
+            
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('unsubscribe_device', { device_id: oldDevice });
+                this.socket.emit('subscribe_device', { device_id: this.currentDevice });
+            }
+            
             this.showAlert(`Cambiado a: ${e.target.options[e.target.selectedIndex].text}`, 'info');
         });
 
-        // Botón modo demo
         document.getElementById('demoBtn').addEventListener('click', () => {
-            this.startDemoMode();
+            if (!this.isDemoRunning) {
+                this.startDemoMode();
+            } else {
+                this.showAlert('⚠️ Demo ya en ejecución', 'warning');
+            }
         });
 
-        // Botón detener emergencia
         document.getElementById('stopBtn').addEventListener('click', () => {
-            this.sendMovementCommand(3); // Detener
+            this.isDemoRunning = false;
+            this.sendMovementCommand(3);
             this.showAlert('🛑 PARADA DE EMERGENCIA ACTIVADA', 'danger');
         });
     }
@@ -45,10 +53,11 @@ class CarControlApp {
             
             if (data.status === 'success') {
                 this.populateDeviceSelect(data.data);
+                this.showWsMessage('✅ Dispositivos cargados correctamente', 'success');
             }
         } catch (error) {
             console.error('Error loading devices:', error);
-            this.showAlert('Error al cargar dispositivos', 'danger');
+            this.showAlert('⚠️ Error al cargar dispositivos', 'warning');
         }
     }
 
@@ -56,10 +65,18 @@ class CarControlApp {
         const select = document.getElementById('deviceSelect');
         select.innerHTML = '';
         
+        if (devices.length === 0) {
+            const option = document.createElement('option');
+            option.value = 1;
+            option.textContent = 'Carro_Principal (ID: 1)';
+            select.appendChild(option);
+            return;
+        }
+        
         devices.forEach(device => {
             const option = document.createElement('option');
             option.value = device.id_dispositivo;
-            option.textContent = device.nombre_dispositivo;
+            option.textContent = `${device.nombre_dispositivo} (ID: ${device.id_dispositivo})`;
             if (device.id_dispositivo === this.currentDevice) {
                 option.selected = true;
             }
@@ -67,31 +84,103 @@ class CarControlApp {
         });
     }
 
-    sendMovementCommand(operation) {
+    connectSocketIO() {
+        try {
+            this.updateConnectionStatus('Conectando...', 'warning');
+            this.showWsMessage('🔄 Intentando conectar al servidor...', 'info');
+            
+            this.socket = io(this.apiBaseUrl, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 5
+            });
+
+            this.socket.on('connect', () => {
+                this.isConnected = true;
+                this.updateConnectionStatus('Conectado ✅', 'success');
+                this.showAlert('✅ Conectado al servidor IoT', 'success');
+                this.showWsMessage('🔗 Socket.IO conectado exitosamente', 'success');
+                
+                this.socket.emit('subscribe_device', { device_id: this.currentDevice });
+            });
+
+            this.socket.on('disconnect', () => {
+                this.isConnected = false;
+                this.updateConnectionStatus('Desconectado ❌', 'danger');
+                this.showWsMessage('🔌 Conexión perdida. Reintentando...', 'warning');
+            });
+
+            this.socket.on('connect_error', (error) => {
+                console.error('Connection error:', error);
+                this.updateConnectionStatus('Error ❌', 'danger');
+                this.showWsMessage('❌ Error de conexión. Verificando servidor...', 'danger');
+            });
+
+            this.socket.on('connection_response', (data) => {
+                this.showWsMessage(`📡 ${data.message}`, 'info');
+            });
+
+            this.socket.on('subscription_response', (data) => {
+                this.showWsMessage(`✅ ${data.message}`, 'success');
+            });
+
+            this.socket.on('command_update', (data) => {
+                if (data.type === 'new_command' && data.data) {
+                    const operationText = this.getOperationText(data.data.status_operacion);
+                    this.showWsMessage(`🚗 Comando confirmado: ${operationText}`, 'success');
+                }
+            });
+
+            this.socket.on('obstacle_update', (data) => {
+                if (data.type === 'new_obstacle' && data.data) {
+                    this.showWsMessage(`🛡️ Obstáculo detectado: ${data.data.status_texto}`, 'warning');
+                }
+            });
+
+        } catch (error) {
+            console.error('Socket.IO error:', error);
+            this.showAlert('❌ Error al inicializar Socket.IO', 'danger');
+        }
+    }
+
+    async sendMovementCommand(operation) {
         if (!this.isConnected) {
-            this.showAlert('❌ No conectado al servidor. Verifica la conexión.', 'danger');
+            this.showAlert('❌ No conectado al servidor. Esperando conexión...', 'danger');
             return;
         }
 
         const commandData = {
             id_dispositivo: this.currentDevice,
-            status_operacion: operation,
-            timestamp: new Date().toISOString()
+            status_operacion: operation
         };
 
-        // Enviar via WebSocket
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({
-                event: 'control_movement',
-                data: commandData
-            }));
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/commands`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(commandData)
+            });
 
-            const operationText = this.getOperationText(operation);
-            const deviceName = document.getElementById('deviceSelect').options[document.getElementById('deviceSelect').selectedIndex].text;
-            this.showAlert(`📤 Enviando a ${deviceName}: ${operationText}`, 'info');
-        } else {
-            this.showAlert('❌ WebSocket no conectado', 'danger');
-            this.connectWebSocket(); // Intentar reconectar
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                const operationText = this.getOperationText(operation);
+                const deviceName = document.getElementById('deviceSelect').options[document.getElementById('deviceSelect').selectedIndex].text;
+                this.showAlert(`✅ Comando enviado: ${operationText}`, 'success');
+                this.showWsMessage(`📤 Enviado a ${deviceName}: ${operationText}`, 'info');
+            } else {
+                this.showAlert(`❌ Error: ${data.message}`, 'danger');
+            }
+        } catch (error) {
+            console.error('Error sending command:', error);
+            this.showAlert(`⚠️ Error al enviar comando`, 'danger');
         }
     }
 
@@ -112,116 +201,63 @@ class CarControlApp {
         return operations[operation] || `Operación ${operation}`;
     }
 
-    startDemoMode() {
+    async startDemoMode() {
         if (!this.isConnected) {
             this.showAlert('❌ No conectado al servidor', 'danger');
             return;
         }
 
+        if (this.isDemoRunning) {
+            return;
+        }
+
+        this.isDemoRunning = true;
+
         const demoSequence = [
             { op: 1, text: 'Adelante', delay: 2000 },
-            { op: 8, text: 'Giro derecha', delay: 2000 },
+            { op: 8, text: 'Giro 90° derecha', delay: 2000 },
             { op: 1, text: 'Adelante', delay: 2000 },
-            { op: 9, text: 'Giro izquierda', delay: 2000 },
+            { op: 9, text: 'Giro 90° izquierda', delay: 2000 },
             { op: 1, text: 'Adelante', delay: 2000 },
             { op: 3, text: 'Detener', delay: 1000 }
         ];
 
         this.showAlert('🚀 INICIANDO MODO DEMO...', 'info');
-        this.showWsMessage('🔧 Modo demo iniciado - Secuencia automática', 'info');
+        this.showWsMessage('🔧 Modo demo iniciado', 'info');
 
-        let currentIndex = 0;
-        
-        const executeNextStep = () => {
-            if (currentIndex < demoSequence.length) {
-                const step = demoSequence[currentIndex];
-                this.sendMovementCommand(step.op);
-                this.showWsMessage(`🔧 Demo: ${step.text}`, 'info');
-                currentIndex++;
-                setTimeout(executeNextStep, step.delay);
-            } else {
-                this.showAlert('✅ MODO DEMO COMPLETADO', 'success');
-                this.showWsMessage('✅ Secuencia demo finalizada', 'success');
+        for (let i = 0; i < demoSequence.length; i++) {
+            if (!this.isDemoRunning) {
+                this.showWsMessage('⏹️ Demo cancelado', 'warning');
+                break;
             }
-        };
 
-        executeNextStep();
-    }
-
-    connectWebSocket() {
-        try {
-            this.ws = new WebSocket(this.wsUrl);
-            this.updateConnectionStatus('Conectando...', 'warning');
-
-            this.ws.onopen = () => {
-                this.isConnected = true;
-                this.updateConnectionStatus('Conectado ✅', 'success');
-                this.showAlert('✅ Conectado al servidor IoT', 'success');
-                this.showWsMessage('🔗 WebSocket conectado - Listo para controlar', 'success');
-            };
-
-            this.ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    this.handleWebSocketMessage(data);
-                } catch (error) {
-                    console.log('Mensaje recibido:', event.data);
-                    this.showWsMessage(`📨 ${event.data}`, 'info');
-                }
-            };
-
-            this.ws.onerror = (error) => {
-                this.updateConnectionStatus('Error ❌', 'danger');
-                this.showAlert('❌ Error de conexión WebSocket', 'danger');
-                this.showWsMessage('❌ Error en conexión WebSocket', 'danger');
-            };
-
-            this.ws.onclose = (event) => {
-                this.isConnected = false;
-                this.updateConnectionStatus('Desconectado', 'secondary');
-                this.showWsMessage('🔌 Conexión WebSocket cerrada', 'secondary');
-                
-                // Intentar reconectar después de 3 segundos
-                setTimeout(() => {
-                    if (!this.isConnected) {
-                        this.showWsMessage('🔄 Intentando reconectar...', 'warning');
-                        this.connectWebSocket();
-                    }
-                }, 3000);
-            };
-
-        } catch (error) {
-            console.error('WebSocket error:', error);
-            this.showAlert('❌ Error al conectar WebSocket', 'danger');
+            const step = demoSequence[i];
+            await this.sendMovementCommand(step.op);
+            this.showWsMessage(`🔧 Demo [${i + 1}/${demoSequence.length}]: ${step.text}`, 'info');
+            
+            await new Promise(resolve => setTimeout(resolve, step.delay));
         }
-    }
 
-    handleWebSocketMessage(data) {
-        if (data.event === 'command_confirmation') {
-            if (data.data.status === 'success') {
-                this.showWsMessage(`✅ ${data.data.message}`, 'success');
-            } else {
-                this.showWsMessage(`❌ ${data.data.message}`, 'danger');
-            }
-        } else if (data.event === 'movement_command') {
-            const operationText = this.getOperationText(data.data.status_operacion);
-            this.showWsMessage(`🚗 Comando ejecutado: ${operationText}`, 'info');
-        } else if (data.event === 'connection_status') {
-            this.showWsMessage(`📡 ${data.data.message}`, 'info');
+        if (this.isDemoRunning) {
+            this.showAlert('✅ MODO DEMO COMPLETADO', 'success');
+            this.showWsMessage('✅ Secuencia finalizada', 'success');
         }
+
+        this.isDemoRunning = false;
     }
 
     updateConnectionStatus(text, type) {
-        const statusElement = document.getElementById('connectionStatus');
+        const statusElements = document.querySelectorAll('#connectionStatus');
         const badgeClass = {
-            'success': 'bg-success status-connected',
-            'warning': 'bg-warning',
-            'danger': 'bg-danger',
-            'secondary': 'bg-secondary'
-        }[type] || 'bg-secondary';
+            'success': 'custom-badge',
+            'warning': 'badge bg-warning',
+            'danger': 'badge bg-danger'
+        }[type] || 'badge bg-secondary';
         
-        statusElement.className = `badge ${badgeClass}`;
-        statusElement.textContent = text;
+        statusElements.forEach(el => {
+            el.className = badgeClass;
+            el.textContent = text;
+        });
     }
 
     showAlert(message, type) {
@@ -234,7 +270,6 @@ class CarControlApp {
         `;
         container.appendChild(alertDiv);
         
-        // Auto-remover después de 5 segundos
         setTimeout(() => {
             if (alertDiv.parentNode) {
                 alertDiv.remove();
@@ -245,7 +280,6 @@ class CarControlApp {
     showWsMessage(message, type) {
         const container = document.getElementById('wsMessages');
         
-        // Si es el primer mensaje, limpiar el placeholder
         if (container.children.length === 1 && container.children[0].classList.contains('text-center')) {
             container.innerHTML = '';
         }
@@ -253,20 +287,19 @@ class CarControlApp {
         const messageDiv = document.createElement('div');
         messageDiv.className = `alert alert-${type} mb-2 fade-in`;
         messageDiv.innerHTML = `
-            <small>${new Date().toLocaleTimeString()}</small><br>
+            <small><strong>${new Date().toLocaleTimeString()}</strong></small><br>
             ${message}
         `;
         container.appendChild(messageDiv);
         container.scrollTop = container.scrollHeight;
 
-        // Limitar a 50 mensajes
         if (container.children.length > 50) {
             container.removeChild(container.firstChild);
         }
     }
 }
 
-// Inicializar aplicación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Iniciando Control Carro IoT...');
     new CarControlApp();
 });
