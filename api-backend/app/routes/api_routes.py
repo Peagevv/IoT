@@ -111,6 +111,51 @@ def get_obstacles_catalog():
     """Obtener catálogo de tipos de obstáculos"""
     return SensorController.get_obstacles_catalog()
 
+# ==================== OBSTÁCULOS MANUALES ====================
+@api_bp.route('/obstacles/manual', methods=['POST'])
+def create_manual_obstacle():
+    """Crear obstáculo manual"""
+    response = SensorController.create_manual_obstacle()
+    
+    # Si el obstáculo fue creado exitosamente, notificar a clientes suscritos
+    if response.status_code == 201:
+        data = request.get_json()
+        id_dispositivo = data.get('id_dispositivo', 1)
+        
+        # Obtener el último obstáculo manual para enviar datos completos
+        obstacles = SensorModel.get_recent_obstacles(id_dispositivo, 1)
+        if obstacles:
+            # Convertir datetime a string
+            obstacle_data = serialize_datetime(obstacles[0])
+            
+            emit_obstacle_update(id_dispositivo, {
+                'type': 'manual_obstacle_created',
+                'data': obstacle_data
+            })
+    
+    return response
+
+@api_bp.route('/obstacles/manual', methods=['GET'])
+def get_manual_obstacles():
+    """Obtener obstáculos manuales recientes"""
+    return SensorController.get_manual_obstacles()
+
+@api_bp.route('/obstacles/manual/<int:obstacle_id>', methods=['DELETE'])
+def delete_manual_obstacle(obstacle_id):
+    """Eliminar obstáculo manual"""
+    response = SensorController.delete_manual_obstacle(obstacle_id)
+    
+    # Si el obstáculo fue eliminado exitosamente, notificar a clientes suscritos
+    if response.status_code == 200:
+        response_data = response.get_json()
+        if response_data.get('status') == 'success':
+            emit_obstacle_update(1, {  # Notificar a todos los dispositivos
+                'type': 'manual_obstacle_deleted',
+                'data': {'id_evento': obstacle_id}
+            })
+    
+    return response
+
 # ==================== SECUENCIAS DEMO ====================
 @api_bp.route('/sequences', methods=['GET'])
 def get_sequences():
@@ -225,6 +270,21 @@ def get_devices():
     """Obtener lista de dispositivos"""
     return CarController.get_devices()
 
+@api_bp.route('/devices', methods=['POST'])
+def create_device():
+    """Crear nuevo dispositivo"""
+    return CarController.create_device()
+
+@api_bp.route('/devices/<int:device_id>', methods=['PUT'])
+def update_device(device_id):
+    """Actualizar dispositivo"""
+    return CarController.update_device(device_id)
+
+@api_bp.route('/devices/<int:device_id>', methods=['DELETE'])
+def delete_device(device_id):
+    """Eliminar dispositivo"""
+    return CarController.delete_device(device_id)
+
 # Manejar OPTIONS para CORS preflight
 @api_bp.route('/commands', methods=['OPTIONS'])
 def commands_options():
@@ -232,6 +292,10 @@ def commands_options():
 
 @api_bp.route('/obstacles', methods=['OPTIONS'])
 def obstacles_options():
+    return '', 204
+
+@api_bp.route('/obstacles/manual', methods=['OPTIONS'])
+def manual_obstacles_options():
     return '', 204
 
 @api_bp.route('/sequences', methods=['OPTIONS'])
