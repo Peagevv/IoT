@@ -1,7 +1,7 @@
 class CarMonitoringApp {
     constructor() {
-        this.apiBaseUrl = 'https://98.91.159.217:5500';
-            this.socket = io('wss://98.91.159.217:5500', {
+        this.apiBaseUrl = 'https://precise-measured-situated-visitor.trycloudflare.com';
+        this.socket = io('https://precise-measured-situated-visitor.trycloudflare.com', {
             transports: ['websocket'],
             secure: true
         });// Cambiar de WebSocket a Socket.IO
