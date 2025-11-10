@@ -3,7 +3,6 @@ from flask import g
 import os
 from dotenv import load_dotenv
 
-# Cargar variables de entorno
 load_dotenv()
 
 def get_db_connection():
@@ -16,7 +15,7 @@ def get_db_connection():
             port=int(os.getenv('DB_PORT', 3306)),
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor,
-            ssl=None,  # Cambiar a {'ssl': True} en producción con Aurora
+            ssl=None,
             autocommit=True
         )
     return g.db
