@@ -34,6 +34,7 @@ class CarControlApp {
             }
             
             this.showAlert(`Cambiado a: ${e.target.options[e.target.selectedIndex].text}`, 'info');
+            this.loadManualObstacles(); // Recargar obstáculos al cambiar dispositivo
         });
 
         // Botón modo demo
@@ -71,6 +72,175 @@ class CarControlApp {
         document.getElementById('saveDeviceBtn').addEventListener('click', () => {
             this.saveDevice();
         });
+
+        // Inicializar listeners de obstáculos manuales
+        this.initializeObstacleListeners();
+    }
+
+    // ==================== OBSTÁCULOS MANUALES ====================
+
+    initializeObstacleListeners() {
+        // Botones de obstáculos manuales
+        document.querySelectorAll('.obstacle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const ubicacion = e.target.closest('button').dataset.ubicacion;
+                this.createManualObstacle(ubicacion);
+            });
+        });
+
+        // Botón limpiar obstáculos
+        const clearObstaclesBtn = document.getElementById('clearObstaclesBtn');
+        if (clearObstaclesBtn) {
+            clearObstaclesBtn.addEventListener('click', () => {
+                this.clearManualObstacles();
+            });
+        }
+    }
+
+    async createManualObstacle(ubicacion) {
+        if (!this.isConnected) {
+            this.showAlert('❌ No conectado al servidor', 'danger');
+            return;
+        }
+
+        // Mapear ubicación a tipo de obstáculo
+        const obstacleMapping = {
+            'frente': 1,      // Adelante
+            'izquierda': 2,   // Adelante-Izquierda  
+            'derecha': 3,     // Adelante-Derecha
+            'atras': 5,       // Retrocede
+            'retroceso': 5    // Retrocede (emergencia)
+        };
+
+        const status_obstaculo = obstacleMapping[ubicacion];
+        const descripcion = `Obstáculo manual en ${ubicacion}`;
+
+        const obstacleData = {
+            id_dispositivo: this.currentDevice,
+            status_obstaculo: status_obstaculo,
+            ubicacion: ubicacion,
+            descripcion: descripcion
+        };
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/obstacles/manual`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(obstacleData)
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                this.showAlert(`✅ Obstáculo en ${ubicacion} registrado`, 'success');
+                this.showWsMessage(`🛑 Obstáculo manual: ${descripcion}`, 'warning');
+                this.loadManualObstacles();
+            } else {
+                this.showAlert(`❌ Error: ${data.message}`, 'danger');
+            }
+        } catch (error) {
+            console.error('Error creating manual obstacle:', error);
+            this.showAlert('⚠️ Error al registrar obstáculo', 'danger');
+        }
+    }
+
+    async loadManualObstacles() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/obstacles/manual?device_id=${this.currentDevice}&limit=10`);
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                this.renderManualObstaclesList(data.data);
+            }
+        } catch (error) {
+            console.error('Error loading manual obstacles:', error);
+        }
+    }
+
+    renderManualObstaclesList(obstacles) {
+        const container = document.getElementById('manualObstaclesList');
+        if (!container) return;
+        
+        if (obstacles.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-shield-check display-6"></i>
+                    <p class="mt-2">No hay obstáculos manuales registrados</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = obstacles.map(obs => `
+            <div class="alert alert-warning mb-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${obs.status_texto}</strong><br>
+                        <small>Ubicación: ${obs.ubicacion}</small><br>
+                        <small>${new Date(obs.fecha_hora).toLocaleTimeString()}</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="app.deleteManualObstacle(${obs.id_evento})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async deleteManualObstacle(obstacleId) {
+        if (!confirm('¿Eliminar este obstáculo manual?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/obstacles/manual/${obstacleId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                this.showAlert('✅ Obstáculo manual eliminado', 'success');
+                this.loadManualObstacles();
+            } else {
+                this.showAlert(`❌ Error: ${data.message}`, 'danger');
+            }
+        } catch (error) {
+            console.error('Error deleting manual obstacle:', error);
+            this.showAlert('⚠️ Error al eliminar obstáculo', 'danger');
+        }
+    }
+
+    async clearManualObstacles() {
+        if (!confirm('¿Eliminar todos los obstáculos manuales?')) {
+            return;
+        }
+
+        try {
+            const obstacles = await this.getCurrentManualObstacles();
+            
+            // Eliminar uno por uno
+            for (const obstacle of obstacles) {
+                await this.deleteManualObstacle(obstacle.id_evento);
+            }
+            
+            this.showAlert('✅ Todos los obstáculos manuales eliminados', 'success');
+        } catch (error) {
+            console.error('Error clearing manual obstacles:', error);
+            this.showAlert('⚠️ Error al limpiar obstáculos', 'danger');
+        }
+    }
+
+    async getCurrentManualObstacles() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/obstacles/manual?device_id=${this.currentDevice}&limit=50`);
+            const data = await response.json();
+            return data.status === 'success' ? data.data : [];
+        } catch (error) {
+            return [];
+        }
     }
 
     // ==================== DISPOSITIVOS ====================
@@ -85,6 +255,7 @@ class CarControlApp {
                 this.populateDeviceSelect(data.data);
                 this.renderDevicesList(data.data);
                 this.showWsMessage('✅ Dispositivos cargados correctamente', 'success');
+                this.loadManualObstacles(); // Cargar obstáculos al iniciar
             }
         } catch (error) {
             console.error('Error loading devices:', error);
@@ -574,6 +745,9 @@ class CarControlApp {
             this.socket.on('obstacle_update', (data) => {
                 if (data.type === 'new_obstacle' && data.data) {
                     this.showWsMessage(`🛡️ Obstáculo detectado: ${data.data.status_texto}`, 'warning');
+                }
+                if (data.type === 'manual_obstacle_created' || data.type === 'manual_obstacle_deleted') {
+                    this.loadManualObstacles(); // Actualizar lista cuando hay cambios
                 }
             });
 

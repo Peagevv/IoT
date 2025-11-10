@@ -187,6 +187,70 @@
             </div>
         </section>
 
+        <!-- ============ SECCIÓN: OBSTÁCULOS MANUALES ============ -->
+        <section id="obstacles-section" class="mt-5">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card custom-card">
+                        <div class="card-header custom-card-header-warning">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">
+                                    <i class="bi bi-shield-exclamation"></i> Gestión de Obstáculos Manuales
+                                </h4>
+                                <button class="btn custom-btn-stop" id="clearObstaclesBtn">
+                                    <i class="bi bi-trash"></i> Limpiar Todo
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Botones de obstáculos -->
+                            <div class="row text-center mb-4">
+                                <div class="col-md-3 mb-3">
+                                    <button class="btn custom-btn-warning obstacle-btn w-100" data-ubicacion="frente">
+                                        <i class="bi bi-arrow-up-circle display-6"></i><br>
+                                        Obstáculo Frente
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <button class="btn custom-btn-warning obstacle-btn w-100" data-ubicacion="atras">
+                                        <i class="bi bi-arrow-down-circle display-6"></i><br>
+                                        Obstáculo Atrás
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <button class="btn custom-btn-warning obstacle-btn w-100" data-ubicacion="izquierda">
+                                        <i class="bi bi-arrow-left-circle display-6"></i><br>
+                                        Obstáculo Izquierda
+                                    </button>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <button class="btn custom-btn-warning obstacle-btn w-100" data-ubicacion="derecha">
+                                        <i class="bi bi-arrow-right-circle display-6"></i><br>
+                                        Obstáculo Derecha
+                                    </button>
+                                </div>
+                                <div class="col-md-6 offset-md-3 mb-3">
+                                    <button class="btn custom-btn-danger obstacle-btn w-100" data-ubicacion="retroceso">
+                                        <i class="bi bi-exclamation-triangle display-6"></i><br>
+                                        Retroceso Emergencia
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Lista de obstáculos manuales -->
+                            <h5><i class="bi bi-list-ul"></i> Obstáculos Registrados</h5>
+                            <div id="manualObstaclesList" class="mt-3">
+                                <div class="text-center text-muted py-3">
+                                    <i class="bi bi-shield-check display-6"></i>
+                                    <p class="mt-2">No hay obstáculos manuales registrados</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ============ SECCIÓN: DISPOSITIVOS ============ -->
         <section id="devices-section" class="mt-5">
             <div class="row">
