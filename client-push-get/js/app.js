@@ -1,7 +1,10 @@
 class CarMonitoringApp {
     constructor() {
         this.apiBaseUrl = 'http://98.91.159.217:5500';
-       this.socket = io('wss://98.91.159.217:5500');// Cambiar de WebSocket a Socket.IO
+             this.socket = io('wss://98.91.159.217:5500', {
+            transports: ['websocket'],
+            secure: true
+        });// Cambiar de WebSocket a Socket.IO
         this.isConnected = false;
         this.currentDevice = 1;
         this.stats = {
