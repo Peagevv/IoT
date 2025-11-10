@@ -1,15 +1,13 @@
 from app.config.database import get_db_connection
 from datetime import datetime
-import json
 
 class SequenceModel:
     @staticmethod
     def create_sequence(id_dispositivo, nombre_secuencia, movimientos):
-        """Crear una secuencia DEMO con sus movimientos"""
         db = get_db_connection()
         try:
             with db.cursor() as cursor:
-                # Insertar la secuencia
+                # Insertar en secuencias_demo
                 sql = """
                 INSERT INTO secuencias_demo (id_dispositivo, nombre_secuencia, fecha_creacion)
                 VALUES (%s, %s, %s)
@@ -17,7 +15,7 @@ class SequenceModel:
                 cursor.execute(sql, (id_dispositivo, nombre_secuencia, datetime.now()))
                 id_secuencia = cursor.lastrowid
                 
-                # Insertar las operaciones de la secuencia
+                # Insertar operaciones en secuencia_operaciones
                 for idx, status_operacion in enumerate(movimientos, start=1):
                     sql_operacion = """
                     INSERT INTO secuencia_operaciones (id_secuencia, status_operacion, orden)
@@ -33,34 +31,59 @@ class SequenceModel:
 
     @staticmethod
     def get_sequences(limit=20):
-        """Obtener las últimas secuencias"""
         db = get_db_connection()
         try:
             with db.cursor() as cursor:
                 sql = """
-                SELECT sd.*, d.nombre_dispositivo, 
-                       COUNT(so.id_secuencia_operaciones) as total_movimientos
+                SELECT 
+                    sd.id_secuencia,
+                    sd.id_dispositivo,
+                    sd.nombre_secuencia,
+                    sd.fecha_creacion,
+                    d.nombre_dispositivo,
+                    GROUP_CONCAT(so.status_operacion ORDER BY so.orden) as operaciones,
+                    COUNT(so.id_secuencia_operaciones) as total_movimientos
                 FROM secuencias_demo sd
                 JOIN dispositivo d ON sd.id_dispositivo = d.id_dispositivo
                 LEFT JOIN secuencia_operaciones so ON sd.id_secuencia = so.id_secuencia
-                GROUP BY sd.id_secuencia
+                GROUP BY sd.id_secuencia, sd.id_dispositivo, sd.nombre_secuencia, sd.fecha_creacion, d.nombre_dispositivo
                 ORDER BY sd.fecha_creacion DESC
                 LIMIT %s
                 """
                 cursor.execute(sql, (limit,))
-                return cursor.fetchall()
+                sequences = cursor.fetchall()
+                
+                # Convertir a formato compatible con el frontend
+                formatted_sequences = []
+                for seq in sequences:
+                    formatted_seq = {
+                        'id_secuencia': seq['id_secuencia'],
+                        'id_dispositivo': seq['id_dispositivo'],
+                        'nombre_secuencia': seq['nombre_secuencia'],
+                        'fecha_creacion': seq['fecha_creacion'],
+                        'nombre_dispositivo': seq['nombre_dispositivo'],
+                        'operaciones': seq['operaciones'] if seq['operaciones'] else '',
+                        'total_movimientos': seq['total_movimientos']
+                    }
+                    formatted_sequences.append(formatted_seq)
+                
+                return formatted_sequences
         except Exception as e:
             raise e
 
     @staticmethod
     def get_sequence_by_id(id_secuencia):
-        """Obtener una secuencia específica con sus operaciones"""
         db = get_db_connection()
         try:
             with db.cursor() as cursor:
-                # Obtener info de la secuencia
+                # Obtener información básica de la secuencia
                 sql = """
-                SELECT sd.*, d.nombre_dispositivo
+                SELECT 
+                    sd.id_secuencia,
+                    sd.id_dispositivo,
+                    sd.nombre_secuencia,
+                    sd.fecha_creacion,
+                    d.nombre_dispositivo
                 FROM secuencias_demo sd
                 JOIN dispositivo d ON sd.id_dispositivo = d.id_dispositivo
                 WHERE sd.id_secuencia = %s
@@ -71,7 +94,7 @@ class SequenceModel:
                 if not sequence:
                     return None
                 
-                # Obtener las operaciones
+                # Obtener operaciones como array
                 sql_ops = """
                 SELECT so.orden, o.status_operacion, o.status_texto
                 FROM secuencia_operaciones so
@@ -82,14 +105,20 @@ class SequenceModel:
                 cursor.execute(sql_ops, (id_secuencia,))
                 operations = cursor.fetchall()
                 
-                sequence['operaciones'] = operations
+                # Convertir operaciones a formato compatible
+                operations_array = [op['status_operacion'] for op in operations]
+                operations_text = [op['status_texto'] for op in operations]
+                
+                sequence['operaciones'] = operations_array
+                sequence['operaciones_texto'] = operations_text
+                sequence['operaciones_detalle'] = operations
+                
                 return sequence
         except Exception as e:
             raise e
 
     @staticmethod
     def update_sequence(id_secuencia, nombre_secuencia=None, movimientos=None):
-        """Actualizar una secuencia"""
         db = get_db_connection()
         try:
             with db.cursor() as cursor:
@@ -99,8 +128,8 @@ class SequenceModel:
                     cursor.execute(sql, (nombre_secuencia, id_secuencia))
                 
                 # Actualizar movimientos si se proporcionan
-                if movimientos:
-                    # Eliminar operaciones anteriores
+                if movimientos is not None:
+                    # Eliminar operaciones existentes
                     sql_delete = "DELETE FROM secuencia_operaciones WHERE id_secuencia = %s"
                     cursor.execute(sql_delete, (id_secuencia,))
                     
@@ -120,15 +149,14 @@ class SequenceModel:
 
     @staticmethod
     def delete_sequence(id_secuencia):
-        """Eliminar una secuencia"""
         db = get_db_connection()
         try:
             with db.cursor() as cursor:
-                # Primero eliminar las operaciones
+                # Eliminar operaciones primero (restricción de clave foránea)
                 sql_ops = "DELETE FROM secuencia_operaciones WHERE id_secuencia = %s"
                 cursor.execute(sql_ops, (id_secuencia,))
                 
-                # Luego eliminar la secuencia
+                # Eliminar la secuencia
                 sql = "DELETE FROM secuencias_demo WHERE id_secuencia = %s"
                 cursor.execute(sql, (id_secuencia,))
                 
@@ -140,7 +168,6 @@ class SequenceModel:
 
     @staticmethod
     def execute_sequence(id_secuencia):
-        """Registrar la ejecución de una secuencia"""
         db = get_db_connection()
         try:
             with db.cursor() as cursor:
@@ -157,7 +184,6 @@ class SequenceModel:
 
     @staticmethod
     def update_execution_status(id_ejecucion, estado):
-        """Actualizar el estado de una ejecución"""
         db = get_db_connection()
         try:
             with db.cursor() as cursor:

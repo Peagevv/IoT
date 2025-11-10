@@ -285,6 +285,37 @@ def delete_device(device_id):
     """Eliminar dispositivo"""
     return CarController.delete_device(device_id)
 
+# ==================== SINCronización ====================
+@api_bp.route('/sync/status', methods=['GET'])
+def get_sync_status():
+    """Obtener estado completo para sincronización"""
+    try:
+        device_id = request.args.get('device_id', 1, type=int)
+        
+        # Obtener datos actualizados
+        devices = CarModel.get_devices()
+        commands = CarModel.get_recent_commands(device_id, 20)
+        obstacles = SensorModel.get_recent_obstacles(device_id, 20)
+        sequences = SequenceModel.get_sequences(10)
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'devices': devices,
+                'recent_commands': commands,
+                'recent_obstacles': obstacles,
+                'sequences': sequences,
+                'system_status': 'online',
+                'timestamp': datetime.now().isoformat()
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Error en sincronización: {str(e)}'
+        }), 500
+
 # Manejar OPTIONS para CORS preflight
 @api_bp.route('/commands', methods=['OPTIONS'])
 def commands_options():
@@ -308,4 +339,8 @@ def sequence_options(id_secuencia):
 
 @api_bp.route('/sequences/<int:id_secuencia>/execute', methods=['OPTIONS'])
 def execute_options(id_secuencia):
+    return '', 204
+
+@api_bp.route('/sync/status', methods=['OPTIONS'])
+def sync_status_options():
     return '', 204

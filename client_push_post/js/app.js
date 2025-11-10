@@ -7,11 +7,14 @@ class CarControlApp {
         this.isDemoRunning = false;
         this.devices = [];
         this.sequences = [];
+        this.commandHistory = []; // Historial de comandos
+        this.obstacleHistory = []; // Historial de obstáculos
         
         this.initializeEventListeners();
         this.loadDevices();
         this.loadSequences();
         this.connectSocketIO();
+        this.initializeSyncFeatures(); // Nueva función de sincronización
     }
 
     initializeEventListeners() {
@@ -77,6 +80,82 @@ class CarControlApp {
         this.initializeObstacleListeners();
     }
 
+    // ==================== SINCronización CON APP MONITOREO ====================
+
+    initializeSyncFeatures() {
+        this.setupMonitoringSync();
+    }
+
+    setupMonitoringSync() {
+        // Enviar estado periódicamente
+        setInterval(() => {
+            this.syncMonitoringApp();
+        }, 10000); // Cada 10 segundos
+    }
+
+    syncMonitoringApp() {
+        if (!this.isConnected) return;
+        
+        // Enviar estadísticas actuales
+        this.socket.emit('monitoring_sync', {
+            type: 'status_update',
+            device_id: this.currentDevice,
+            timestamp: new Date().toISOString(),
+            data: {
+                total_commands: this.getTotalCommands(),
+                total_obstacles: this.getTotalObstacles(),
+                is_demo_running: this.isDemoRunning,
+                connection_status: this.isConnected ? 'connected' : 'disconnected'
+            }
+        });
+    }
+
+    // Métodos auxiliares para estadísticas
+    getTotalCommands() {
+        return this.commandHistory ? this.commandHistory.length : 0;
+    }
+
+    getTotalObstacles() {
+        return this.obstacleHistory ? this.obstacleHistory.length : 0;
+    }
+
+    // Métodos para registrar eventos en el historial
+    addToCommandHistory(commandData) {
+        if (!this.commandHistory) {
+            this.commandHistory = [];
+        }
+        this.commandHistory.push({
+            ...commandData,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Limitar historial a 1000 elementos
+        if (this.commandHistory.length > 1000) {
+            this.commandHistory = this.commandHistory.slice(-500);
+        }
+        
+        // Sincronizar con app de monitoreo
+        this.syncMonitoringApp();
+    }
+
+    addToObstacleHistory(obstacleData) {
+        if (!this.obstacleHistory) {
+            this.obstacleHistory = [];
+        }
+        this.obstacleHistory.push({
+            ...obstacleData,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Limitar historial a 1000 elementos
+        if (this.obstacleHistory.length > 1000) {
+            this.obstacleHistory = this.obstacleHistory.slice(-500);
+        }
+        
+        // Sincronizar con app de monitoreo
+        this.syncMonitoringApp();
+    }
+
     // ==================== OBSTÁCULOS MANUALES ====================
 
     initializeObstacleListeners() {
@@ -136,6 +215,13 @@ class CarControlApp {
             if (data.status === 'success') {
                 this.showAlert(`✅ Obstáculo en ${ubicacion} registrado`, 'success');
                 this.showWsMessage(`🛑 Obstáculo manual: ${descripcion}`, 'warning');
+                
+                // Agregar al historial y sincronizar
+                this.addToObstacleHistory({
+                    ...obstacleData,
+                    status_texto: this.getObstacleText(status_obstaculo)
+                });
+                
                 this.loadManualObstacles();
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
@@ -204,6 +290,7 @@ class CarControlApp {
             if (data.status === 'success') {
                 this.showAlert('✅ Obstáculo manual eliminado', 'success');
                 this.loadManualObstacles();
+                this.syncMonitoringApp(); // Sincronizar después de eliminar
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -227,6 +314,7 @@ class CarControlApp {
             }
             
             this.showAlert('✅ Todos los obstáculos manuales eliminados', 'success');
+            this.syncMonitoringApp(); // Sincronizar después de limpiar
         } catch (error) {
             console.error('Error clearing manual obstacles:', error);
             this.showAlert('⚠️ Error al limpiar obstáculos', 'danger');
@@ -336,6 +424,7 @@ class CarControlApp {
                 this.showAlert(`✅ Dispositivo ${id ? 'actualizado' : 'creado'} correctamente`, 'success');
                 bootstrap.Modal.getInstance(document.getElementById('deviceModal')).hide();
                 await this.loadDevices();
+                this.syncMonitoringApp(); // Sincronizar después de guardar dispositivo
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -360,6 +449,7 @@ class CarControlApp {
             if (data.status === 'success') {
                 this.showAlert('✅ Dispositivo eliminado correctamente', 'success');
                 await this.loadDevices();
+                this.syncMonitoringApp(); // Sincronizar después de eliminar
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -600,6 +690,7 @@ class CarControlApp {
                 this.showAlert(`✅ Secuencia ${id ? 'actualizada' : 'creada'} correctamente`, 'success');
                 bootstrap.Modal.getInstance(document.getElementById('sequenceModal')).hide();
                 await this.loadSequences();
+                this.syncMonitoringApp(); // Sincronizar después de guardar secuencia
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -624,6 +715,7 @@ class CarControlApp {
             if (data.status === 'success') {
                 this.showAlert('✅ Secuencia eliminada', 'success');
                 await this.loadSequences();
+                this.syncMonitoringApp(); // Sincronizar después de eliminar
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -690,6 +782,7 @@ class CarControlApp {
         }
 
         this.isDemoRunning = false;
+        this.syncMonitoringApp(); // Sincronizar después de completar secuencia
     }
 
     // ==================== SOCKET.IO ====================
@@ -713,12 +806,14 @@ class CarControlApp {
                 this.showWsMessage('🔗 Socket.IO conectado exitosamente', 'success');
                 
                 this.socket.emit('subscribe_device', { device_id: this.currentDevice });
+                this.syncMonitoringApp(); // Sincronizar al conectar
             });
 
             this.socket.on('disconnect', () => {
                 this.isConnected = false;
                 this.updateConnectionStatus('Desconectado ❌', 'danger');
                 this.showWsMessage('🔌 Conexión perdida. Reintentando...', 'warning');
+                this.syncMonitoringApp(); // Sincronizar al desconectar
             });
 
             this.socket.on('connect_error', (error) => {
@@ -739,21 +834,29 @@ class CarControlApp {
                 if (data.type === 'new_command' && data.data) {
                     const operationText = this.getOperationText(data.data.status_operacion);
                     this.showWsMessage(`🚗 Comando confirmado: ${operationText}`, 'success');
+                    
+                    // Agregar al historial de comandos
+                    this.addToCommandHistory(data.data);
                 }
             });
 
             this.socket.on('obstacle_update', (data) => {
                 if (data.type === 'new_obstacle' && data.data) {
                     this.showWsMessage(`🛡️ Obstáculo detectado: ${data.data.status_texto}`, 'warning');
+                    
+                    // Agregar al historial de obstáculos
+                    this.addToObstacleHistory(data.data);
                 }
                 if (data.type === 'manual_obstacle_created' || data.type === 'manual_obstacle_deleted') {
                     this.loadManualObstacles(); // Actualizar lista cuando hay cambios
+                    this.syncMonitoringApp(); // Sincronizar cambios de obstáculos
                 }
             });
 
             this.socket.on('sequence_update', (data) => {
                 if (data.type === 'sequence_created' || data.type === 'sequence_updated' || data.type === 'sequence_deleted') {
                     this.loadSequences();
+                    this.syncMonitoringApp(); // Sincronizar cambios de secuencias
                 }
             });
 
@@ -796,6 +899,14 @@ class CarControlApp {
                 const deviceName = document.getElementById('deviceSelect').options[document.getElementById('deviceSelect').selectedIndex].text;
                 this.showAlert(`✅ Comando enviado: ${operationText}`, 'success');
                 this.showWsMessage(`📤 Enviado a ${deviceName}: ${operationText}`, 'info');
+                
+                // Agregar al historial y sincronizar
+                this.addToCommandHistory({
+                    ...commandData,
+                    status_texto: operationText,
+                    nombre_dispositivo: deviceName
+                });
+                
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -820,6 +931,17 @@ class CarControlApp {
             11: '⟲ Giro 360° izquierda'
         };
         return operations[operation] || `Operación ${operation}`;
+    }
+
+    getObstacleText(obstacle) {
+        const obstacles = {
+            1: 'Obstáculo adelante',
+            2: 'Obstáculo adelante-izquierda', 
+            3: 'Obstáculo adelante-derecha',
+            4: 'Obstáculo múltiple',
+            5: 'Retroceder - Obstáculo crítico'
+        };
+        return obstacles[obstacle] || `Obstáculo ${obstacle}`;
     }
 
     // ==================== DEMO RÁPIDO ====================
@@ -867,6 +989,7 @@ class CarControlApp {
         }
 
         this.isDemoRunning = false;
+        this.syncMonitoringApp(); // Sincronizar después del demo
     }
 
     // ==================== UI HELPERS ====================
