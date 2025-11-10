@@ -285,7 +285,35 @@ def delete_device(device_id):
     """Eliminar dispositivo"""
     return CarController.delete_device(device_id)
 
-# ==================== SINCronización ====================
+# ==================== ESTADO DEL DISPOSITIVO ====================
+@api_bp.route('/devices/<int:device_id>/status', methods=['GET'])
+def get_device_status(device_id):
+    """Obtener el último estado de un dispositivo"""
+    try:
+        # Obtener el último comando
+        last_command = CarModel.get_recent_commands(device_id, 1)
+        # Obtener el último obstáculo
+        last_obstacle = SensorModel.get_recent_obstacles(device_id, 1)
+        
+        status_data = {
+            'last_command': last_command[0] if last_command else None,
+            'last_obstacle': last_obstacle[0] if last_obstacle else None,
+            'current_status': 'online',  # Podrías determinar esto basado en conexiones activas
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return jsonify({
+            'status': 'success',
+            'data': status_data
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Error al obtener estado: {str(e)}'
+        }), 500
+
+# ==================== SINCROnIZACIÓN ====================
 @api_bp.route('/sync/status', methods=['GET'])
 def get_sync_status():
     """Obtener estado completo para sincronización"""
@@ -343,4 +371,9 @@ def execute_options(id_secuencia):
 
 @api_bp.route('/sync/status', methods=['OPTIONS'])
 def sync_status_options():
+    return '', 204
+
+# Nueva opción para la ruta de estado del dispositivo
+@api_bp.route('/devices/<int:device_id>/status', methods=['OPTIONS'])
+def device_status_options(device_id):
     return '', 204
