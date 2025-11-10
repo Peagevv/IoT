@@ -1,8 +1,7 @@
 class CarMonitoringApp {
     constructor() {
         this.apiBaseUrl = 'http://98.91.159.217:5500';
-        this.wsUrl = 'ws://localhost:5500';
-        this.ws = null;
+        this.socket = null;  // Cambiar de WebSocket a Socket.IO
         this.isConnected = false;
         this.currentDevice = 1;
         this.stats = {
@@ -19,14 +18,163 @@ class CarMonitoringApp {
 
     initializeApp() {
         this.initializeEventListeners();
-        this.connectWebSocket();
+        this.connectSocketIO();  // Cambiar a Socket.IO
         this.loadInitialData();
         this.startUptimeCounter();
     }
 
+    // CAMBIAR: Reemplazar connectWebSocket por connectSocketIO
+    connectSocketIO() {
+        if (this.isConnected) {
+            this.showNotification('Ya estás conectado al servidor', 'info');
+            return;
+        }
+
+        try {
+            this.updateConnectionStatus('Conectando...', 'warning');
+            
+            // Usar Socket.IO en lugar de WebSocket nativo
+            this.socket = io(this.apiBaseUrl, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000
+            });
+
+            this.socket.on('connect', () => {
+                this.isConnected = true;
+                this.stats.connections++;
+                this.updateConnectionStatus('Conectado ✅', 'success');
+                this.addRealTimeMessage('🔗 Sistema de monitoreo conectado', 'system');
+                this.showNotification('Socket.IO conectado exitosamente', 'success');
+                
+                // Suscribirse al dispositivo actual
+                this.socket.emit('subscribe_device', { device_id: this.currentDevice });
+            });
+
+            this.socket.on('disconnect', () => {
+                this.isConnected = false;
+                this.updateConnectionStatus('Desconectado', 'secondary');
+                this.addRealTimeMessage('🔌 Desconectado del servidor', 'system');
+            });
+
+            this.socket.on('connect_error', (error) => {
+                this.updateConnectionStatus('Error ❌', 'danger');
+                this.addRealTimeMessage('❌ Error en la conexión', 'system');
+                console.error('Socket.IO error:', error);
+            });
+
+            // ==================== ESCUCHAR EVENTOS DEL APP CONTROL ====================
+            
+            // Comandos del carro
+            this.socket.on('command_update', (data) => {
+                this.stats.wsMessages++;
+                this.updateStats();
+                
+                if (data.type === 'new_command') {
+                    this.handleCommandUpdate(data.data);
+                }
+            });
+
+            // Obstáculos
+            this.socket.on('obstacle_update', (data) => {
+                this.stats.wsMessages++;
+                this.updateStats();
+                
+                if (data.type === 'new_obstacle' || data.type === 'manual_obstacle_created') {
+                    this.handleObstacleUpdate(data.data);
+                }
+            });
+
+            // Secuencias
+            this.socket.on('sequence_update', (data) => {
+                this.stats.wsMessages++;
+                this.updateStats();
+                
+                if (data.type === 'sequence_created' || data.type === 'sequence_updated') {
+                    this.handleSequenceUpdate(data.data);
+                }
+            });
+
+            // Ejecuciones
+            this.socket.on('execution_update', (data) => {
+                this.stats.wsMessages++;
+                this.updateStats();
+                
+                if (data.type === 'execution_started') {
+                    this.handleExecutionUpdate(data.data);
+                }
+            });
+
+            // Respuestas del servidor
+            this.socket.on('connection_response', (data) => {
+                this.addRealTimeMessage(`📡 ${data.message}`, 'system');
+            });
+
+            this.socket.on('subscription_response', (data) => {
+                this.addRealTimeMessage(`✅ ${data.message}`, 'system');
+            });
+
+        } catch (error) {
+            console.error('Socket.IO connection error:', error);
+            this.showNotification('Error al conectar Socket.IO', 'danger');
+        }
+    }
+
+    // ==================== MANEJAR EVENTOS ESPECÍFICOS ====================
+
+    handleCommandUpdate(commandData) {
+        const operationText = this.getOperationText(commandData.status_operacion);
+        const deviceName = this.getDeviceName(commandData.id_dispositivo);
+        
+        this.addRealTimeMovement(
+            `🚗 ${deviceName} - ${operationText}`,
+            commandData.status_operacion
+        );
+        
+        // Actualizar estadísticas
+        this.stats.totalMovements++;
+        this.updateStats();
+        
+        // Recargar historial después de un breve delay
+        setTimeout(() => this.loadMovementsHistory(), 500);
+    }
+
+    handleObstacleUpdate(obstacleData) {
+        const deviceName = this.getDeviceName(obstacleData.id_dispositivo);
+        const obstacleText = this.getObstacleText(obstacleData.status_obstaculo);
+        
+        this.addRealTimeObstacle(
+            `⚠️ ${deviceName} - ${obstacleText}`,
+            obstacleData.status_obstaculo
+        );
+        
+        // Actualizar estadísticas
+        this.stats.totalObstacles++;
+        this.updateStats();
+        
+        // Recargar historial después de un breve delay
+        setTimeout(() => this.loadObstaclesHistory(), 500);
+    }
+
+    handleSequenceUpdate(sequenceData) {
+        this.addRealTimeMessage(
+            `📋 Secuencia "${sequenceData.nombre_secuencia}" actualizada`,
+            'system'
+        );
+    }
+
+    handleExecutionUpdate(executionData) {
+        this.addRealTimeMessage(
+            `🎬 Ejecutando secuencia: ${executionData.id_secuencia}`,
+            'system'
+        );
+    }
+
+    // ==================== ACTUALIZAR EVENT LISTENER PARA CAMBIAR DISPOSITIVO ====================
+
     initializeEventListeners() {
         document.getElementById('connectBtn').addEventListener('click', () => {
-            this.connectWebSocket();
+            this.connectSocketIO();  // Cambiado a Socket.IO
         });
 
         document.getElementById('refreshBtn').addEventListener('click', () => {
@@ -40,7 +188,15 @@ class CarMonitoringApp {
         });
 
         document.getElementById('deviceSelect').addEventListener('change', (e) => {
+            const oldDevice = this.currentDevice;
             this.currentDevice = parseInt(e.target.value);
+            
+            // Cambiar suscripción en WebSocket
+            if (this.socket && this.socket.connected) {
+                this.socket.emit('unsubscribe_device', { device_id: oldDevice });
+                this.socket.emit('subscribe_device', { device_id: this.currentDevice });
+            }
+            
             this.loadMovementsHistory();
             this.loadObstaclesHistory();
             this.showNotification(`Cambiado a: ${e.target.options[e.target.selectedIndex].text}`, 'info');
@@ -211,95 +367,6 @@ class CarMonitoringApp {
         if ([1, 2, 3].includes(obstacle)) return 'obstacle'; // Obstáculos normales
         if ([4, 5].includes(obstacle)) return 'emergency'; // Obstáculos críticos
         return 'obstacle';
-    }
-
-    connectWebSocket() {
-        if (this.isConnected) {
-            this.showNotification('Ya estás conectado al WebSocket', 'info');
-            return;
-        }
-
-        try {
-            this.ws = new WebSocket(this.wsUrl);
-            this.updateConnectionStatus('Conectando...', 'warning');
-
-            this.ws.onopen = () => {
-                this.isConnected = true;
-                this.stats.connections++;
-                this.updateConnectionStatus('Conectado ✅', 'success');
-                this.addRealTimeMessage('🔗 Sistema de monitoreo conectado', 'system');
-                this.showNotification('WebSocket conectado exitosamente', 'success');
-            };
-
-            this.ws.onmessage = (event) => {
-                this.stats.wsMessages++;
-                this.updateStats();
-                
-                try {
-                    const data = JSON.parse(event.data);
-                    this.handleWebSocketMessage(data);
-                } catch (error) {
-                    console.log('Mensaje raw:', event.data);
-                }
-            };
-
-            this.ws.onerror = (error) => {
-                this.updateConnectionStatus('Error ❌', 'danger');
-                this.addRealTimeMessage('❌ Error en la conexión WebSocket', 'system');
-            };
-
-            this.ws.onclose = () => {
-                this.isConnected = false;
-                this.updateConnectionStatus('Desconectado', 'secondary');
-                this.addRealTimeMessage('🔌 Desconectado del servidor WebSocket', 'system');
-                
-                // Intentar reconectar después de 5 segundos
-                setTimeout(() => {
-                    if (!this.isConnected) {
-                        this.addRealTimeMessage('🔄 Intentando reconectar...', 'system');
-                        this.connectWebSocket();
-                    }
-                }, 5000);
-            };
-
-        } catch (error) {
-            console.error('WebSocket connection error:', error);
-            this.showNotification('Error al conectar WebSocket', 'danger');
-        }
-    }
-
-    handleWebSocketMessage(data) {
-        if (data.event === 'movement_command') {
-            const operationText = this.getOperationText(data.data.status_operacion);
-            const deviceName = this.getDeviceName(data.data.id_dispositivo);
-            
-            this.addRealTimeMovement(
-                `🚗 ${deviceName} - ${operationText}`,
-                data.data.status_operacion
-            );
-            
-            // Actualizar historial después de un breve delay
-            setTimeout(() => this.loadMovementsHistory(), 500);
-            
-        } else if (data.event === 'obstacle_detected') {
-            const deviceName = this.getDeviceName(data.data.id_dispositivo);
-            const obstacleText = this.getObstacleText(data.data.status_obstaculo);
-            
-            this.addRealTimeObstacle(
-                `⚠️ ${deviceName} - ${obstacleText}`,
-                data.data.status_obstaculo
-            );
-            
-            // Actualizar historial después de un breve delay
-            setTimeout(() => this.loadObstaclesHistory(), 500);
-            
-        } else if (data.event === 'command_confirmation') {
-            if (data.data.status === 'success') {
-                this.addRealTimeMessage(`✅ ${data.data.message}`, 'system');
-            } else {
-                this.addRealTimeMessage(`❌ ${data.data.message}`, 'system');
-            }
-        }
     }
 
     getOperationText(operation) {
