@@ -66,6 +66,11 @@ class CarControlApp {
         document.getElementById('saveSequenceBtn').addEventListener('click', () => {
             this.saveSequence();
         });
+
+        // Botón guardar dispositivo
+        document.getElementById('saveDeviceBtn').addEventListener('click', () => {
+            this.saveDevice();
+        });
     }
 
     // ==================== DISPOSITIVOS ====================
@@ -118,6 +123,81 @@ class CarControlApp {
         });
     }
 
+    // ==================== DISPOSITIVOS CRUD ====================
+
+    async saveDevice() {
+        const id = document.getElementById('deviceId').value;
+        const name = document.getElementById('deviceName').value.trim();
+        const description = document.getElementById('deviceDescription').value.trim();
+
+        if (!name) {
+            this.showAlert('⚠️ El nombre del dispositivo es requerido', 'warning');
+            return;
+        }
+
+        const deviceData = {
+            nombre_dispositivo: name,
+            descripcion: description
+        };
+
+        try {
+            let url, method;
+            
+            if (id) {
+                url = `${this.apiBaseUrl}/api/devices/${id}`;
+                method = 'PUT';
+            } else {
+                url = `${this.apiBaseUrl}/api/devices`;
+                method = 'POST';
+            }
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(deviceData)
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                this.showAlert(`✅ Dispositivo ${id ? 'actualizado' : 'creado'} correctamente`, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('deviceModal')).hide();
+                await this.loadDevices();
+            } else {
+                this.showAlert(`❌ Error: ${data.message}`, 'danger');
+            }
+        } catch (error) {
+            console.error('Error saving device:', error);
+            this.showAlert('⚠️ Error al guardar dispositivo', 'danger');
+        }
+    }
+
+    async deleteDevice(deviceId) {
+        if (!confirm('¿Estás seguro de eliminar este dispositivo? Esta acción no se puede deshacer.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/devices/${deviceId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                this.showAlert('✅ Dispositivo eliminado correctamente', 'success');
+                await this.loadDevices();
+            } else {
+                this.showAlert(`❌ Error: ${data.message}`, 'danger');
+            }
+        } catch (error) {
+            console.error('Error deleting device:', error);
+            this.showAlert('⚠️ Error al eliminar dispositivo', 'danger');
+        }
+    }
+
     renderDevicesList(devices) {
         const container = document.getElementById('devicesList');
         
@@ -143,6 +223,7 @@ class CarControlApp {
                         </h5>
                         <p class="card-text">
                             <strong>ID:</strong> ${device.id_dispositivo}<br>
+                            <strong>Descripción:</strong> ${device.descripcion || 'Sin descripción'}<br>
                             <strong>Estado:</strong> 
                             <span class="badge ${device.id_dispositivo === this.currentDevice ? 'bg-success' : 'bg-secondary'}">
                                 ${device.id_dispositivo === this.currentDevice ? 'Activo' : 'Disponible'}
@@ -153,6 +234,12 @@ class CarControlApp {
                         <div class="btn-group w-100" role="group">
                             <button class="btn btn-sm custom-btn-primary" onclick="app.selectDevice(${device.id_dispositivo})">
                                 <i class="bi bi-check-circle"></i> Seleccionar
+                            </button>
+                            <button class="btn btn-sm custom-btn-warning" onclick="app.openDeviceModal(${JSON.stringify(device).replace(/"/g, '&quot;')})">
+                                <i class="bi bi-pencil"></i> Editar
+                            </button>
+                            <button class="btn btn-sm custom-btn-stop" onclick="app.deleteDevice(${device.id_dispositivo})">
+                                <i class="bi bi-trash"></i> Eliminar
                             </button>
                         </div>
                     </div>
