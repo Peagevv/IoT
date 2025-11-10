@@ -1,7 +1,10 @@
 class CarControlApp {
     constructor() {
-        this.apiBaseUrl = 'http://98.91.159.217:5500';
-        this.socket = io('wss://98.91.159.217:5500');
+        this.apiBaseUrl = 'https://98.91.159.217:5500';
+        this.socket = io('wss://98.91.159.217:5500', {
+            transports: ['websocket'],
+            secure: true
+        });
         this.isConnected = false;
         this.currentDevice = 1;
         this.isDemoRunning = false;
