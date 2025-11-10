@@ -1,10 +1,10 @@
 class CarMonitoringApp {
     constructor() {
-        this.apiBaseUrl = 'http://98.91.159.217:5500'; // <-- sin "https" si no configuraste SSL
-        this.socket = io('http://98.91.159.217:5500', {  // mismo aquí
+        this.apiBaseUrl = 'http://98.91.159.217:5500';
+        this.socket = io('http://98.91.159.217:5500', {
             transports: ['websocket'],
             secure: false
-        });// Cambiar de WebSocket a Socket.IO
+        });
         this.isConnected = false;
         this.currentDevice = 1;
         this.stats = {
@@ -16,17 +16,155 @@ class CarMonitoringApp {
             startTime: Date.now()
         };
         
+        // ==================== PROPIEDADES PARA GESTIÓN DE ESTADO ACTUAL ====================
+        this.lastMovement = null;
+        this.lastObstacle = null;
+        this.currentCarStatus = 'desconectado';
+        this.statusUpdateTime = null;
+        this.isDemoRunning = false;
+        
         this.initializeApp();
     }
 
     initializeApp() {
         this.initializeEventListeners();
-        this.connectSocketIO();  // Cambiar a Socket.IO
+        this.connectSocketIO();
         this.loadInitialData();
         this.startUptimeCounter();
+        this.initializeStatusUpdates(); // Inicializar actualizaciones de estado
     }
 
-    // CAMBIAR: Reemplazar connectWebSocket por connectSocketIO
+    // ==================== GESTIÓN DE ESTADO ACTUAL (MONITOREO) ====================
+
+    initializeStatusUpdates() {
+        // Actualizar timestamp periódicamente
+        setInterval(() => {
+            this.updateStatusTimestamp();
+        }, 1000);
+    }
+
+    // Escuchar eventos de sincronización de la app control
+    setupStatusSync() {
+        this.socket.on('monitoring_sync', (data) => {
+            if (data.type === 'status_update') {
+                this.updateStatusFromControl(data.data);
+            }
+        });
+    }
+
+    // Actualizar estado desde datos de la app control
+    updateStatusFromControl(statusData) {
+        console.log('Actualizando estado desde control:', statusData);
+        
+        // Actualizar último movimiento si está disponible
+        if (statusData.last_command) {
+            this.lastMovement = {
+                operation: statusData.last_command.status_operacion,
+                text: this.getOperationText(statusData.last_command.status_operacion),
+                device: statusData.last_command.id_dispositivo,
+                timestamp: new Date(statusData.timestamp)
+            };
+        }
+        
+        // Actualizar último obstáculo si está disponible
+        if (statusData.last_obstacle) {
+            this.lastObstacle = {
+                type: statusData.last_obstacle.status_obstaculo,
+                text: this.getObstacleText(statusData.last_obstacle.status_obstaculo),
+                device: statusData.last_obstacle.id_dispositivo,
+                timestamp: new Date(statusData.timestamp)
+            };
+        }
+        
+        // Actualizar estado general
+        this.currentCarStatus = statusData.connection_status || 'desconectado';
+        this.isDemoRunning = statusData.is_demo_running || false;
+        this.statusUpdateTime = new Date(statusData.timestamp);
+        
+        // Actualizar estadísticas
+        if (statusData.total_commands !== undefined) {
+            this.stats.totalMovements = statusData.total_commands;
+        }
+        if (statusData.total_obstacles !== undefined) {
+            this.stats.totalObstacles = statusData.total_obstacles;
+        }
+        
+        this.renderCurrentStatus();
+        this.updateStats();
+    }
+
+    // Renderizar estado actual en la interfaz
+    renderCurrentStatus() {
+        // Actualizar último movimiento
+        const movementElement = document.getElementById('lastMovement');
+        const movementTimeElement = document.getElementById('lastMovementTime');
+        
+        if (this.lastMovement) {
+            movementElement.innerHTML = `<span class="text-success fw-bold">${this.lastMovement.text}</span>`;
+            movementTimeElement.textContent = `Hora: ${this.lastMovement.timestamp.toLocaleTimeString()}`;
+        } else {
+            movementElement.innerHTML = '<span class="text-muted">Sin movimientos</span>';
+            movementTimeElement.textContent = '';
+        }
+
+        // Actualizar último obstáculo
+        const obstacleElement = document.getElementById('lastObstacle');
+        const obstacleTimeElement = document.getElementById('lastObstacleTime');
+        
+        if (this.lastObstacle) {
+            obstacleElement.innerHTML = `<span class="text-warning fw-bold">${this.lastObstacle.text}</span>`;
+            obstacleTimeElement.textContent = `Hora: ${this.lastObstacle.timestamp.toLocaleTimeString()}`;
+        } else {
+            obstacleElement.innerHTML = '<span class="text-muted">Sin obstáculos</span>';
+            obstacleTimeElement.textContent = '';
+        }
+
+        // Actualizar estado actual
+        const statusElement = document.getElementById('currentStatus');
+        let statusBadge = '';
+        
+        if (this.currentCarStatus === 'connected') {
+            statusBadge = this.isDemoRunning ? 
+                '<span class="badge bg-warning">Demo en Ejecución</span>' :
+                '<span class="badge bg-success">Conectado</span>';
+        } else if (this.currentCarStatus === 'disconnected') {
+            statusBadge = '<span class="badge bg-secondary">Desconectado</span>';
+        } else {
+            statusBadge = '<span class="badge bg-danger">Error</span>';
+        }
+        
+        statusElement.innerHTML = statusBadge;
+    }
+
+    updateStatusTimestamp() {
+        const timestampElement = document.getElementById('statusTimestamp');
+        if (timestampElement) {
+            timestampElement.textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+        }
+    }
+
+    // Actualizar último movimiento desde eventos de comando
+    updateLastMovement(commandData) {
+        this.lastMovement = {
+            operation: commandData.status_operacion,
+            text: this.getOperationText(commandData.status_operacion),
+            device: commandData.id_dispositivo,
+            timestamp: new Date()
+        };
+        this.renderCurrentStatus();
+    }
+
+    // Actualizar último obstáculo desde eventos de obstáculo
+    updateLastObstacle(obstacleData) {
+        this.lastObstacle = {
+            type: obstacleData.status_obstaculo,
+            text: this.getObstacleText(obstacleData.status_obstaculo),
+            device: obstacleData.id_dispositivo,
+            timestamp: new Date()
+        };
+        this.renderCurrentStatus();
+    }
+
     connectSocketIO() {
         if (this.isConnected) {
             this.showNotification('Ya estás conectado al servidor', 'info');
@@ -36,7 +174,6 @@ class CarMonitoringApp {
         try {
             this.updateConnectionStatus('Conectando...', 'warning');
             
-            // Usar Socket.IO en lugar de WebSocket nativo
             this.socket = io(this.apiBaseUrl, {
                 transports: ['websocket', 'polling'],
                 reconnection: true,
@@ -50,20 +187,35 @@ class CarMonitoringApp {
                 this.addRealTimeMessage('🔗 Sistema de monitoreo conectado', 'system');
                 this.showNotification('Socket.IO conectado exitosamente', 'success');
                 
+                // Actualizar estado del carro
+                this.currentCarStatus = 'connected';
+                this.renderCurrentStatus();
+                
                 // Suscribirse al dispositivo actual
                 this.socket.emit('subscribe_device', { device_id: this.currentDevice });
+                
+                // Configurar sincronización de estado
+                this.setupStatusSync();
             });
 
             this.socket.on('disconnect', () => {
                 this.isConnected = false;
                 this.updateConnectionStatus('Desconectado', 'secondary');
                 this.addRealTimeMessage('🔌 Desconectado del servidor', 'system');
+                
+                // Actualizar estado del carro
+                this.currentCarStatus = 'disconnected';
+                this.renderCurrentStatus();
             });
 
             this.socket.on('connect_error', (error) => {
                 this.updateConnectionStatus('Error ❌', 'danger');
                 this.addRealTimeMessage('❌ Error en la conexión', 'system');
                 console.error('Socket.IO error:', error);
+                
+                // Actualizar estado del carro
+                this.currentCarStatus = 'error';
+                this.renderCurrentStatus();
             });
 
             // ==================== ESCUCHAR EVENTOS DEL APP CONTROL ====================
@@ -75,6 +227,7 @@ class CarMonitoringApp {
                 
                 if (data.type === 'new_command') {
                     this.handleCommandUpdate(data.data);
+                    this.updateLastMovement(data.data); // Actualizar último movimiento
                 }
             });
 
@@ -85,6 +238,7 @@ class CarMonitoringApp {
                 
                 if (data.type === 'new_obstacle' || data.type === 'manual_obstacle_created') {
                     this.handleObstacleUpdate(data.data);
+                    this.updateLastObstacle(data.data); // Actualizar último obstáculo
                 }
             });
 
@@ -105,6 +259,20 @@ class CarMonitoringApp {
                 
                 if (data.type === 'execution_started') {
                     this.handleExecutionUpdate(data.data);
+                    this.isDemoRunning = true;
+                    this.renderCurrentStatus();
+                }
+                
+                if (data.type === 'execution_finished') {
+                    this.isDemoRunning = false;
+                    this.renderCurrentStatus();
+                }
+            });
+
+            // Sincronización de estado con app control
+            this.socket.on('monitoring_sync', (data) => {
+                if (data.type === 'status_update') {
+                    this.updateStatusFromControl(data.data);
                 }
             });
 
@@ -177,7 +345,7 @@ class CarMonitoringApp {
 
     initializeEventListeners() {
         document.getElementById('connectBtn').addEventListener('click', () => {
-            this.connectSocketIO();  // Cambiado a Socket.IO
+            this.connectSocketIO();
         });
 
         document.getElementById('refreshBtn').addEventListener('click', () => {
@@ -203,6 +371,11 @@ class CarMonitoringApp {
             this.loadMovementsHistory();
             this.loadObstaclesHistory();
             this.showNotification(`Cambiado a: ${e.target.options[e.target.selectedIndex].text}`, 'info');
+            
+            // Resetear estado al cambiar dispositivo
+            this.lastMovement = null;
+            this.lastObstacle = null;
+            this.renderCurrentStatus();
         });
 
         document.getElementById('autoRefresh').addEventListener('change', (e) => {
@@ -215,6 +388,7 @@ class CarMonitoringApp {
         await this.loadMovementsHistory();
         await this.loadObstaclesHistory();
         await this.loadStats();
+        this.renderCurrentStatus(); // Renderizar estado inicial
     }
 
     async checkApiStatus() {
@@ -525,7 +699,6 @@ class CarMonitoringApp {
     }
 
     showNotification(message, type) {
-        // Crear notificación toast simple
         const alertClass = {
             'success': 'alert-success',
             'danger': 'alert-danger', 
@@ -543,7 +716,6 @@ class CarMonitoringApp {
 
         document.body.appendChild(alertDiv);
 
-        // Auto-remover después de 3 segundos
         setTimeout(() => {
             if (alertDiv.parentNode) {
                 alertDiv.remove();
