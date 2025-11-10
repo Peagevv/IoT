@@ -11,8 +11,26 @@ from app.config.websocket import (
 from app.models.car_model import CarModel
 from app.models.sensor_model import SensorModel
 from app.models.sequence_model import SequenceModel
+from datetime import datetime
 
 api_bp = Blueprint('api', __name__)
+
+# Función auxiliar para convertir datetime a string
+def serialize_datetime(data):
+    """Convierte objetos datetime a string para JSON"""
+    if isinstance(data, dict):
+        result = {}
+        for key, value in data.items():
+            if isinstance(value, datetime):
+                result[key] = value.strftime('%Y-%m-%d %H:%M:%S')
+            elif isinstance(value, dict):
+                result[key] = serialize_datetime(value)
+            elif isinstance(value, list):
+                result[key] = [serialize_datetime(item) if isinstance(item, dict) else item for item in value]
+            else:
+                result[key] = value
+        return result
+    return data
 
 # ==================== HEALTH CHECK ====================
 @api_bp.route('/health', methods=['GET'])
@@ -37,16 +55,19 @@ def send_command():
     response = CarController.send_command()
     
     # Si el comando fue exitoso, notificar a clientes suscritos
-    if response[1] == 201:
+    if response.status_code == 201:
         data = request.get_json()
         id_dispositivo = data.get('id_dispositivo', 1)
         
         # Obtener el último comando para enviar datos completos
         commands = CarModel.get_recent_commands(id_dispositivo, 1)
         if commands:
+            # Convertir datetime a string
+            command_data = serialize_datetime(commands[0])
+            
             emit_command_update(id_dispositivo, {
                 'type': 'new_command',
-                'data': commands[0]
+                'data': command_data
             })
     
     return response
@@ -68,16 +89,19 @@ def report_obstacle():
     response = SensorController.report_obstacle()
     
     # Si el obstáculo fue registrado, notificar a clientes suscritos
-    if response[1] == 201:
+    if response.status_code == 201:
         data = request.get_json()
         id_dispositivo = data.get('id_dispositivo', 1)
         
         # Obtener el último obstáculo para enviar datos completos
         obstacles = SensorModel.get_recent_obstacles(id_dispositivo, 1)
         if obstacles:
+            # Convertir datetime a string
+            obstacle_data = serialize_datetime(obstacles[0])
+            
             emit_obstacle_update(id_dispositivo, {
                 'type': 'new_obstacle',
-                'data': obstacles[0]
+                'data': obstacle_data
             })
     
     return response
@@ -98,14 +122,15 @@ def create_sequence():
     """Crear nueva secuencia (con notificación push)"""
     response = SequenceController.create_sequence()
     
-    # Si la secuencia fue creada, notificar
-    if response[1] == 201:
+    # CORREGIDO: Usar response directamente
+    if response.status_code == 201:
+        response_data = response.get_json()
         data = request.get_json()
         id_dispositivo = data.get('id_dispositivo', 1)
         
         emit_sequence_update(id_dispositivo, {
             'type': 'sequence_created',
-            'data': response[0].json['data']
+            'data': response_data.get('data', {})
         })
     
     return response
@@ -120,14 +145,18 @@ def update_sequence(id_secuencia):
     """Actualizar una secuencia (con notificación push)"""
     response = SequenceController.update_sequence(id_secuencia)
     
-    # Si se actualizó, notificar
-    if response[0].json['status'] == 'success':
+    # CORREGIDO: Usar response directamente
+    response_data = response.get_json()
+    
+    if response_data.get('status') == 'success':
         sequence = SequenceModel.get_sequence_by_id(id_secuencia)
         if sequence:
             id_dispositivo = sequence['id_dispositivo']
+            # Convertir datetime
+            sequence_data = serialize_datetime(sequence)
             emit_sequence_update(id_dispositivo, {
                 'type': 'sequence_updated',
-                'data': sequence
+                'data': sequence_data
             })
     
     return response
@@ -140,8 +169,10 @@ def delete_sequence(id_secuencia):
     
     response = SequenceController.delete_sequence(id_secuencia)
     
-    # Si se eliminó, notificar
-    if response[0].json['status'] == 'success' and sequence:
+    # CORREGIDO: Usar response directamente
+    response_data = response.get_json()
+    
+    if response_data.get('status') == 'success' and sequence:
         id_dispositivo = sequence['id_dispositivo']
         emit_sequence_update(id_dispositivo, {
             'type': 'sequence_deleted',
@@ -155,14 +186,16 @@ def execute_sequence(id_secuencia):
     """Ejecutar una secuencia (con notificación push)"""
     response = SequenceController.execute_sequence(id_secuencia)
     
-    # Si se inició la ejecución, notificar
-    if response[0].json['status'] == 'success':
+    # CORREGIDO: Usar response directamente
+    response_data = response.get_json()
+    
+    if response_data.get('status') == 'success':
         sequence = SequenceModel.get_sequence_by_id(id_secuencia)
         if sequence:
             id_dispositivo = sequence['id_dispositivo']
             emit_execution_update(id_dispositivo, {
                 'type': 'execution_started',
-                'data': response[0].json['data']
+                'data': response_data.get('data', {})
             })
     
     return response
@@ -172,8 +205,10 @@ def update_execution_status():
     """Actualizar estado de ejecución (con notificación push)"""
     response = SequenceController.update_execution_status()
     
-    # Si se actualizó, notificar
-    if response[0].json['status'] == 'success':
+    # CORREGIDO: Usar response directamente
+    response_data = response.get_json()
+    
+    if response_data.get('status') == 'success':
         data = request.get_json()
         # Aquí necesitarías obtener el id_dispositivo de la ejecución
         # Por ahora notificaremos a todos
@@ -189,3 +224,24 @@ def update_execution_status():
 def get_devices():
     """Obtener lista de dispositivos"""
     return CarController.get_devices()
+
+# Manejar OPTIONS para CORS preflight
+@api_bp.route('/commands', methods=['OPTIONS'])
+def commands_options():
+    return '', 204
+
+@api_bp.route('/obstacles', methods=['OPTIONS'])
+def obstacles_options():
+    return '', 204
+
+@api_bp.route('/sequences', methods=['OPTIONS'])
+def sequences_options():
+    return '', 204
+
+@api_bp.route('/sequences/<int:id_secuencia>', methods=['OPTIONS'])
+def sequence_options(id_secuencia):
+    return '', 204
+
+@api_bp.route('/sequences/<int:id_secuencia>/execute', methods=['OPTIONS'])
+def execute_options(id_secuencia):
+    return '', 204

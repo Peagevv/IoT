@@ -1,29 +1,55 @@
-from flask import jsonify, request
+from flask import jsonify, request, make_response
 from app.models.sequence_model import SequenceModel
+import json
 
 class SequenceController:
     @staticmethod
     def create_sequence():
-        """Crear una nueva secuencia DEMO"""
         try:
             data = request.get_json()
             
-            # Validaciones
-            if not data or 'nombre_secuencia' not in data or 'movimientos' not in data:
-                return jsonify({
+            # Validar datos requeridos - ahora acepta ambas estructuras
+            if not data or 'nombre_secuencia' not in data:
+                return make_response(jsonify({
                     'status': 'error',
-                    'message': 'nombre_secuencia y movimientos son requeridos'
-                }), 400
-            
-            if not isinstance(data['movimientos'], list) or len(data['movimientos']) == 0:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'movimientos debe ser una lista con al menos un elemento'
-                }), 400
+                    'message': 'nombre_secuencia es requerido'
+                }), 400)
             
             id_dispositivo = data.get('id_dispositivo', 1)
             nombre_secuencia = data['nombre_secuencia']
-            movimientos = data['movimientos']
+            
+            # Manejar ambas estructuras: 'movimientos' (array) y 'operaciones' (string)
+            movimientos = None
+            
+            if 'movimientos' in data:
+                # Nueva estructura: array de movimientos
+                if not isinstance(data['movimientos'], list) or len(data['movimientos']) == 0:
+                    return make_response(jsonify({
+                        'status': 'error',
+                        'message': 'movimientos debe ser una lista con al menos un elemento'
+                    }), 400)
+                movimientos = data['movimientos']
+                
+            elif 'operaciones' in data:
+                # Estructura antigua: string separado por comas
+                operaciones_str = data['operaciones']
+                try:
+                    movimientos = [int(op.strip()) for op in operaciones_str.split(',')]
+                    if len(movimientos) == 0:
+                        return make_response(jsonify({
+                            'status': 'error',
+                            'message': 'operaciones debe contener al menos una operación válida'
+                        }), 400)
+                except ValueError:
+                    return make_response(jsonify({
+                        'status': 'error',
+                        'message': 'operaciones debe contener números separados por comas'
+                    }), 400)
+            else:
+                return make_response(jsonify({
+                    'status': 'error',
+                    'message': 'Se requiere movimientos (array) u operaciones (string)'
+                }), 400)
             
             # Crear la secuencia
             id_secuencia = SequenceModel.create_sequence(
@@ -32,7 +58,7 @@ class SequenceController:
                 movimientos
             )
             
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'success',
                 'message': 'Secuencia creada correctamente',
                 'data': {
@@ -40,69 +66,89 @@ class SequenceController:
                     'nombre_secuencia': nombre_secuencia,
                     'total_movimientos': len(movimientos)
                 }
-            }), 201
+            }), 201)
             
         except Exception as e:
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'error',
                 'message': f'Error al crear secuencia: {str(e)}'
-            }), 500
+            }), 500)
 
     @staticmethod
     def get_sequences():
-        """Obtener lista de secuencias"""
         try:
             limit = request.args.get('limit', 20, type=int)
             sequences = SequenceModel.get_sequences(limit)
             
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'success',
                 'data': sequences
-            })
+            }), 200)
             
         except Exception as e:
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'error',
                 'message': str(e)
-            }), 500
+            }), 500)
 
     @staticmethod
     def get_sequence_by_id(id_secuencia):
-        """Obtener una secuencia específica"""
         try:
             sequence = SequenceModel.get_sequence_by_id(id_secuencia)
             
             if not sequence:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'error',
                     'message': 'Secuencia no encontrada'
-                }), 404
+                }), 404)
             
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'success',
                 'data': sequence
-            })
+            }), 200)
             
         except Exception as e:
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'error',
                 'message': str(e)
-            }), 500
+            }), 500)
 
     @staticmethod
     def update_sequence(id_secuencia):
-        """Actualizar una secuencia"""
         try:
             data = request.get_json()
             
             if not data:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'error',
                     'message': 'No se proporcionaron datos para actualizar'
-                }), 400
+                }), 400)
             
             nombre_secuencia = data.get('nombre_secuencia')
-            movimientos = data.get('movimientos')
+            
+            # Manejar ambas estructuras para movimientos
+            movimientos = None
+            if 'movimientos' in data:
+                if not isinstance(data['movimientos'], list) or len(data['movimientos']) == 0:
+                    return make_response(jsonify({
+                        'status': 'error',
+                        'message': 'movimientos debe ser una lista con al menos un elemento'
+                    }), 400)
+                movimientos = data['movimientos']
+                
+            elif 'operaciones' in data:
+                try:
+                    movimientos = [int(op.strip()) for op in data['operaciones'].split(',')]
+                    if len(movimientos) == 0:
+                        return make_response(jsonify({
+                            'status': 'error',
+                            'message': 'operaciones debe contener al menos una operación válida'
+                        }), 400)
+                except ValueError:
+                    return make_response(jsonify({
+                        'status': 'error',
+                        'message': 'operaciones debe contener números separados por comas'
+                    }), 400)
             
             success = SequenceModel.update_sequence(
                 id_secuencia, 
@@ -111,62 +157,58 @@ class SequenceController:
             )
             
             if success:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'success',
                     'message': 'Secuencia actualizada correctamente'
-                })
+                }), 200)
             else:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'error',
                     'message': 'No se pudo actualizar la secuencia'
-                }), 400
+                }), 400)
             
         except Exception as e:
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'error',
                 'message': f'Error al actualizar secuencia: {str(e)}'
-            }), 500
+            }), 500)
 
     @staticmethod
     def delete_sequence(id_secuencia):
-        """Eliminar una secuencia"""
         try:
             success = SequenceModel.delete_sequence(id_secuencia)
             
             if success:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'success',
                     'message': 'Secuencia eliminada correctamente'
-                })
+                }), 200)
             else:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'error',
                     'message': 'Secuencia no encontrada'
-                }), 404
+                }), 404)
             
         except Exception as e:
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'error',
                 'message': f'Error al eliminar secuencia: {str(e)}'
-            }), 500
+            }), 500)
 
     @staticmethod
     def execute_sequence(id_secuencia):
-        """Ejecutar una secuencia"""
         try:
-            # Verificar que la secuencia existe
             sequence = SequenceModel.get_sequence_by_id(id_secuencia)
             
             if not sequence:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'error',
                     'message': 'Secuencia no encontrada'
-                }), 404
+                }), 404)
             
-            # Registrar la ejecución
             id_ejecucion = SequenceModel.execute_sequence(id_secuencia)
             
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'success',
                 'message': 'Secuencia lista para ejecutar',
                 'data': {
@@ -174,32 +216,31 @@ class SequenceController:
                     'id_secuencia': id_secuencia,
                     'operaciones': sequence['operaciones']
                 }
-            }), 200
+            }), 200)
             
         except Exception as e:
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'error',
                 'message': f'Error al ejecutar secuencia: {str(e)}'
-            }), 500
+            }), 500)
 
     @staticmethod
     def update_execution_status():
-        """Actualizar el estado de una ejecución"""
         try:
             data = request.get_json()
             
             if not data or 'id_ejecucion' not in data or 'estado' not in data:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'error',
                     'message': 'id_ejecucion y estado son requeridos'
-                }), 400
+                }), 400)
             
             valid_states = ['pendiente', 'progreso', 'completado', 'cancelado', 'fallido']
             if data['estado'] not in valid_states:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'error',
                     'message': f'Estado inválido. Estados válidos: {valid_states}'
-                }), 400
+                }), 400)
             
             success = SequenceModel.update_execution_status(
                 data['id_ejecucion'], 
@@ -207,18 +248,18 @@ class SequenceController:
             )
             
             if success:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'success',
                     'message': 'Estado actualizado correctamente'
-                })
+                }), 200)
             else:
-                return jsonify({
+                return make_response(jsonify({
                     'status': 'error',
                     'message': 'No se pudo actualizar el estado'
-                }), 400
+                }), 400)
             
         except Exception as e:
-            return jsonify({
+            return make_response(jsonify({
                 'status': 'error',
                 'message': f'Error al actualizar estado: {str(e)}'
-            }), 500
+            }), 500)
