@@ -1,9 +1,9 @@
 class CarControlApp {
     constructor() {
-        this.apiBaseUrl = 'https://precise-measured-situated-visitor.trycloudflare.com';
-        this.socket = io('https://precise-measured-situated-visitor.trycloudflare.com', {
+        this.apiBaseUrl = 'http://98.91.159.217:5500'; // <-- sin "https" si no configuraste SSL
+        this.socket = io('http://98.91.159.217:5500', {  // mismo aquí
             transports: ['websocket'],
-            secure: true
+            secure: false
         });
         this.isConnected = false;
         this.currentDevice = 1;
