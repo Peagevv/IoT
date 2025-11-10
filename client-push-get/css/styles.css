@@ -76,6 +76,131 @@ body::before {
     transform: translateY(-2px);
 }
 
+/* ============ ESTILOS PARA ESTADO ACTUAL DEL CARRO ============ */
+
+.status-card {
+    padding: 1.5rem;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.status-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.6s;
+}
+
+.status-card:hover::before {
+    left: 100%;
+}
+
+.status-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 
+        0 15px 35px rgba(106, 13, 173, 0.3),
+        0 0 60px rgba(138, 43, 226, 0.2);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.status-value {
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 1rem 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.status-card i {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 10px rgba(138, 43, 226, 0.3));
+}
+
+.status-card h5 {
+    color: #E6E6FA;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/* Estados específicos para las tarjetas de estado */
+.status-card:nth-child(1) {
+    border-left: 4px solid #8A2BE2;
+}
+
+.status-card:nth-child(2) {
+    border-left: 4px solid #FF6B6B;
+}
+
+.status-card:nth-child(3) {
+    border-left: 4px solid #4FC3F7;
+}
+
+/* Badges para estados en la sección de estado actual */
+#currentStatus .badge,
+.status-value .badge {
+    font-size: 0.9rem;
+    padding: 10px 20px;
+    border-radius: 15px;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Texto en las tarjetas de estado */
+.status-value .text-success {
+    color: #9C27B0 !important;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(156, 39, 176, 0.3);
+}
+
+.status-value .text-warning {
+    color: #FF6B6B !important;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+}
+
+.status-value .text-muted {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+/* Timestamp styling */
+#statusTimestamp,
+#lastMovementTime,
+#lastObstacleTime {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #B39DDB !important;
+    margin-top: 0.5rem;
+}
+
+/* Efectos de hover específicos para estado actual */
+#current-status-section .card {
+    border: none;
+    box-shadow: 0 8px 32px rgba(106, 13, 173, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(15px);
+}
+
+#current-status-section .card-header {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    background: var(--gradient-primary);
+    font-weight: 700;
+}
+
 /* Cards con efecto glassmorphism */
 .card {
     border: none;
@@ -455,6 +580,21 @@ footer {
     .navbar-brand {
         font-size: 1.3rem;
     }
+    
+    /* Responsive para estado actual */
+    .status-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .status-card i.display-4 {
+        font-size: 2.5rem !important;
+    }
+    
+    .status-value {
+        min-height: 40px;
+        font-size: 1rem;
+    }
 }
 
 /* Efectos de texto brillante */
@@ -507,4 +647,24 @@ footer {
 .card-body .row.text-center p {
     font-size: 0.9rem;
     opacity: 0.8;
+}
+
+/* Animación especial para actualizaciones de estado */
+.status-update {
+    animation: statusUpdate 0.8s ease-out;
+}
+
+@keyframes statusUpdate {
+    0% {
+        background: rgba(138, 43, 226, 0.3);
+        transform: scale(1);
+    }
+    50% {
+        background: rgba(138, 43, 226, 0.6);
+        transform: scale(1.05);
+    }
+    100% {
+        background: rgba(138, 43, 226, 0.3);
+        transform: scale(1);
+    }
 }
