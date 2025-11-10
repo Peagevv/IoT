@@ -1,6 +1,6 @@
 class CarControlApp {
     constructor() {
-        this.apiBaseUrl = 'http://98.91.159.217:5500'; // <-- sin "https" si no configuraste SSL
+      this.apiBaseUrl = 'http://98.91.159.217:5500'; // <-- sin "https" si no configuraste SSL
         this.socket = io('http://98.91.159.217:5500', {  // mismo aquí
             transports: ['websocket'],
             secure: false
@@ -18,6 +18,7 @@ class CarControlApp {
         this.loadSequences();
         this.connectSocketIO();
         this.initializeSyncFeatures(); // Nueva función de sincronización
+        this.initializeStatusUpdates(); // Inicializar actualizaciones de estado
     }
 
     initializeEventListeners() {
@@ -41,6 +42,7 @@ class CarControlApp {
             
             this.showAlert(`Cambiado a: ${e.target.options[e.target.selectedIndex].text}`, 'info');
             this.loadManualObstacles(); // Recargar obstáculos al cambiar dispositivo
+            this.updateCurrentStatus(); // Actualizar estado al cambiar dispositivo
         });
 
         // Botón modo demo
@@ -83,6 +85,55 @@ class CarControlApp {
         this.initializeObstacleListeners();
     }
 
+    // ==================== ACTUALIZACIONES DE ESTADO ====================
+
+    initializeStatusUpdates() {
+        // Actualizar timestamp periódicamente
+        setInterval(() => {
+            this.updateStatusTimestamp();
+        }, 1000);
+    }
+
+    updateCurrentStatus() {
+        const statusElement = document.getElementById('currentStatus');
+        const deviceName = document.getElementById('deviceSelect').options[document.getElementById('deviceSelect').selectedIndex].text;
+        
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <span class="badge ${this.isConnected ? 'bg-success' : 'bg-secondary'}">
+                    ${this.isConnected ? 'Conectado' : 'Desconectado'} - ${deviceName}
+                </span>
+            `;
+        }
+    }
+
+    updateLastMovement(operationText) {
+        const movementElement = document.getElementById('lastMovement');
+        const timeElement = document.getElementById('lastMovementTime');
+        
+        if (movementElement && timeElement) {
+            movementElement.innerHTML = `<span class="text-success">${operationText}</span>`;
+            timeElement.textContent = `Hora: ${new Date().toLocaleTimeString()}`;
+        }
+    }
+
+    updateLastObstacle(obstacleText) {
+        const obstacleElement = document.getElementById('lastObstacle');
+        const timeElement = document.getElementById('lastObstacleTime');
+        
+        if (obstacleElement && timeElement) {
+            obstacleElement.innerHTML = `<span class="text-warning">${obstacleText}</span>`;
+            timeElement.textContent = `Hora: ${new Date().toLocaleTimeString()}`;
+        }
+    }
+
+    updateStatusTimestamp() {
+        const timestampElement = document.getElementById('statusTimestamp');
+        if (timestampElement) {
+            timestampElement.textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+        }
+    }
+
     // ==================== SINCronización CON APP MONITOREO ====================
 
     initializeSyncFeatures() {
@@ -108,7 +159,8 @@ class CarControlApp {
                 total_commands: this.getTotalCommands(),
                 total_obstacles: this.getTotalObstacles(),
                 is_demo_running: this.isDemoRunning,
-                connection_status: this.isConnected ? 'connected' : 'disconnected'
+                connection_status: this.isConnected ? 'connected' : 'disconnected',
+                current_device: this.currentDevice
             }
         });
     }
@@ -137,6 +189,9 @@ class CarControlApp {
             this.commandHistory = this.commandHistory.slice(-500);
         }
         
+        // Actualizar último movimiento
+        this.updateLastMovement(commandData.status_texto);
+        
         // Sincronizar con app de monitoreo
         this.syncMonitoringApp();
     }
@@ -154,6 +209,9 @@ class CarControlApp {
         if (this.obstacleHistory.length > 1000) {
             this.obstacleHistory = this.obstacleHistory.slice(-500);
         }
+        
+        // Actualizar último obstáculo
+        this.updateLastObstacle(obstacleData.status_texto);
         
         // Sincronizar con app de monitoreo
         this.syncMonitoringApp();
@@ -347,6 +405,7 @@ class CarControlApp {
                 this.renderDevicesList(data.data);
                 this.showWsMessage('✅ Dispositivos cargados correctamente', 'success');
                 this.loadManualObstacles(); // Cargar obstáculos al iniciar
+                this.updateCurrentStatus(); // Actualizar estado al cargar dispositivos
             }
         } catch (error) {
             console.error('Error loading devices:', error);
@@ -807,6 +866,7 @@ class CarControlApp {
                 this.updateConnectionStatus('Conectado ✅', 'success');
                 this.showAlert('✅ Conectado al servidor IoT', 'success');
                 this.showWsMessage('🔗 Socket.IO conectado exitosamente', 'success');
+                this.updateCurrentStatus(); // Actualizar estado al conectar
                 
                 this.socket.emit('subscribe_device', { device_id: this.currentDevice });
                 this.syncMonitoringApp(); // Sincronizar al conectar
@@ -816,6 +876,7 @@ class CarControlApp {
                 this.isConnected = false;
                 this.updateConnectionStatus('Desconectado ❌', 'danger');
                 this.showWsMessage('🔌 Conexión perdida. Reintentando...', 'warning');
+                this.updateCurrentStatus(); // Actualizar estado al desconectar
                 this.syncMonitoringApp(); // Sincronizar al desconectar
             });
 
@@ -823,6 +884,7 @@ class CarControlApp {
                 console.error('Connection error:', error);
                 this.updateConnectionStatus('Error ❌', 'danger');
                 this.showWsMessage('❌ Error de conexión. Verificando servidor...', 'danger');
+                this.updateCurrentStatus(); // Actualizar estado en error
             });
 
             this.socket.on('connection_response', (data) => {

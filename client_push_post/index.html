@@ -159,6 +159,55 @@
             </div>
         </section>
 
+        <!-- ============ SECCIÓN: ESTADO ACTUAL DEL CARRO ============ -->
+        <section id="current-status-section" class="mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card custom-card">
+                        <div class="card-header custom-card-header-primary">
+                            <h4 class="mb-0">
+                                <i class="bi bi-speedometer2"></i> Estado Actual del Carro
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-4 mb-3">
+                                    <div class="status-card">
+                                        <i class="bi bi-activity display-4 text-primary"></i>
+                                        <h5 class="mt-2">Último Movimiento</h5>
+                                        <div id="lastMovement" class="status-value">
+                                            <span class="text-muted">Sin movimientos</span>
+                                        </div>
+                                        <small class="text-muted" id="lastMovementTime"></small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="status-card">
+                                        <i class="bi bi-shield-exclamation display-4 text-warning"></i>
+                                        <h5 class="mt-2">Último Obstáculo</h5>
+                                        <div id="lastObstacle" class="status-value">
+                                            <span class="text-muted">Sin obstáculos</span>
+                                        </div>
+                                        <small class="text-muted" id="lastObstacleTime"></small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="status-card">
+                                        <i class="bi bi-play-circle display-4 text-info"></i>
+                                        <h5 class="mt-2">Estado Actual</h5>
+                                        <div id="currentStatus" class="status-value">
+                                            <span class="badge bg-secondary">Detenido</span>
+                                        </div>
+                                        <small class="text-muted" id="statusTimestamp">Actualizado: --:--:--</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ============ SECCIÓN: SECUENCIAS ============ -->
         <section id="sequences-section" class="mt-5">
             <div class="row">
