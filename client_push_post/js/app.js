@@ -1,32 +1,356 @@
 class CarControlApp {
     constructor() {
-      this.apiBaseUrl = 'http://98.91.159.217:5500'; // <-- sin "https" si no configuraste SSL
-        this.socket = io('http://98.91.159.217:5500', {  // mismo aquí
+        this.apiBaseUrl = 'http://98.91.159.217:5500';
+        this.socket = io('http://98.91.159.217:5500', {
             transports: ['websocket'],
             secure: false
         });
+        
+        // ==========================================
+        // CONFIGURACIÓN WEBSOCKET
+        // ==========================================
+        this.WS_HOST = '98.91.159.217';
+        this.WS_PORT = 5501;
+        this.WS_PATH = '/client';
+        this.WS_URL = `ws://${this.WS_HOST}:${this.WS_PORT}${this.WS_PATH}`;
+        
+        this.ws = null;
+        this.isWSConnected = false;
+        this.carConnected = false;
+        
+        // ==========================================
+        // SISTEMA DE MODOS
+        // ==========================================
+        this.currentMode = 'manual'; // manual o sequence
+        this.modeChangePending = false;
+        
+        // ==========================================
+        // MAPEO CORREGIDO PARA COINCIDIR CON LA API
+        // ==========================================
+        this.OPERATIONS = {
+            // BÁSICOS
+            1: { command: 'forward', duration: 1000, name: 'Adelante' },
+            2: { command: 'backward', duration: 1000, name: 'Atrás' },
+            3: { command: 'stop', duration: 100, name: 'Detener' },
+            
+            // VUELTAS ADELANTE
+            4: { command: 'curve_forward_right', duration: 800, name: 'Vuelta Adelante Der.' },
+            5: { command: 'curve_forward_left', duration: 800, name: 'Vuelta Adelante Izq.' },
+            
+            // VUELTAS ATRÁS
+            6: { command: 'curve_backward_right', duration: 800, name: 'Vuelta Atrás Der.' },
+            7: { command: 'curve_backward_left', duration: 800, name: 'Vuelta Atrás Izq.' },
+            
+            // GIROS 90°
+            8: { command: 'turn_right', duration: 500, name: 'Giro 90° Derecha' },
+            9: { command: 'turn_left', duration: 500, name: 'Giro 90° Izquierda' },
+            
+            // GIROS 360°
+            10: { command: 'spin_right', duration: 2000, name: 'Giro 360° Derecha' },
+            11: { command: 'spin_left', duration: 2000, name: 'Giro 360° Izquierda' }
+        };
+
         this.isConnected = false;
         this.currentDevice = 1;
         this.isDemoRunning = false;
         this.devices = [];
         this.sequences = [];
-        this.commandHistory = []; // Historial de comandos
-        this.obstacleHistory = []; // Historial de obstáculos
+        this.commandHistory = [];
+        this.obstacleHistory = [];
+        
+        // ==========================================
+        // SISTEMA DE DETECCIÓN DE OBSTÁCULOS
+        // ==========================================
+        this.initializeObstacleDetection();
         
         this.initializeEventListeners();
         this.loadDevices();
         this.loadSequences();
         this.connectSocketIO();
-        this.initializeSyncFeatures(); // Nueva función de sincronización
-        this.initializeStatusUpdates(); // Inicializar actualizaciones de estado
+        this.initializeSyncFeatures();
+        this.initializeStatusUpdates();
+        this.connectWebSocket();
     }
+
+    // ==========================================
+    // SISTEMA DE MODOS - FUNCIONES NUEVAS
+    // ==========================================
+
+    setMode(mode) {
+        if (!this.isWSConnected) {
+            this.showNotification('❌ No conectado al carro', 'error');
+            return;
+        }
+        
+        this.currentMode = mode;
+        this.modeChangePending = true;
+        
+        const message = {
+            command: 'toggle_autonomous'
+        };
+        
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify(message));
+            console.log(`🔄 Cambiando a modo: ${mode}`);
+            this.showNotification(`🔄 Cambiando a modo: ${mode}`, 'info');
+        }
+        
+        this.updateModeIndicator(mode);
+    }
+
+    updateModeIndicator(mode) {
+        const indicator = document.getElementById('modeIndicator');
+        if (indicator) {
+            indicator.textContent = mode === 'manual' ? '🎮 MODO MANUAL' : '🤖 MODO AUTÓNOMO';
+            indicator.className = `mode-indicator ${mode}`;
+        }
+        
+        // Actualizar botones de modo
+        const manualBtn = document.querySelector('[onclick*="setManualMode"]');
+        const autoBtn = document.querySelector('[onclick*="setAutoMode"]');
+        
+        if (manualBtn && autoBtn) {
+            manualBtn.classList.toggle('active', mode === 'manual');
+            autoBtn.classList.toggle('active', mode === 'sequence');
+        }
+    }
+
+    // ==========================================
+    // NOTIFICACIONES ESPECÍFICAS
+    // ==========================================
+
+    showObstacleAlertManual(distance) {
+        const alert = document.createElement('div');
+        alert.className = 'obstacle-alert-manual';
+        alert.innerHTML = `
+            <div class="alert-content">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>
+                    <strong>🛑 OBSTÁCULO DETECTADO</strong>
+                    <p>Distancia: ${distance} cm</p>
+                    <p><strong>Carro detenido - Se requiere intervención manual</strong></p>
+                </div>
+                <button class="close-alert" onclick="this.parentElement.parentElement.remove()">×</button>
+            </div>
+        `;
+        
+        document.body.appendChild(alert);
+        setTimeout(() => alert.classList.add('show'), 10);
+        
+        setTimeout(() => {
+            if (alert.parentElement) {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 300);
+            }
+        }, 10000);
+    }
+
+    showObstacleAvoidedAuto(distance) {
+        const alert = document.createElement('div');
+        alert.className = 'obstacle-alert-auto';
+        alert.innerHTML = `
+            <div class="alert-content">
+                <i class="bi bi-robot"></i>
+                <div>
+                    <strong>🤖 ESQUIVA AUTOMÁTICA</strong>
+                    <p>Obstáculo a ${distance} cm - Esquivando...</p>
+                </div>
+                <button class="close-alert" onclick="this.parentElement.parentElement.remove()">×</button>
+            </div>
+        `;
+        
+        document.body.appendChild(alert);
+        setTimeout(() => alert.classList.add('show'), 10);
+        
+        setTimeout(() => {
+            if (alert.parentElement) {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 300);
+            }
+        }, 5000);
+    }
+
+    // ==========================================
+    // FUNCIONES AUXILIARES PARA MODOS
+    // ==========================================
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    onSequenceComplete() {
+        this.setMode('manual');
+        console.log('✅ Secuencia completada - Volviendo a modo manual');
+        this.showNotification('✅ Secuencia completada - Volviendo a modo manual', 'success');
+    }
+
+    // ==========================================
+    // INICIALIZACIÓN DETECCIÓN DE OBSTÁCULOS
+    // ==========================================
+
+    initializeObstacleDetection() {
+        console.log('🛡️ Inicializando sistema de detección de obstáculos...');
+        this.obstacleStatus = {
+            detected: false,
+            distance: 0,
+            location: 'none',
+            lastDetection: null,
+            lastClear: null
+        };
+    }
+
+    // ==========================================
+    // WEBSOCKET CON DETECCIÓN DE OBSTÁCULOS - ACTUALIZADO
+    // ==========================================
+
+    connectWebSocket() {
+        console.log('🔌 Conectando a WebSocket...');
+        
+        try {
+            this.ws = new WebSocket(this.WS_URL);
+            
+            this.ws.onopen = () => {
+                console.log('✅ WebSocket conectado');
+                this.updateServerStatus(true);
+                this.showNotification('Conectado al servidor WebSocket', 'success');
+            };
+            
+            this.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('📨 Mensaje WebSocket:', data);
+                    
+                    // Mensaje de bienvenida
+                    if (data.status === 'connected' && data.type === 'client') {
+                        console.log(`Carros disponibles: ${data.cars_connected}`);
+                        if (data.cars_connected > 0) {
+                            this.updateCarStatus(true);
+                        }
+                    }
+                    
+                    // Estado del carro
+                    else if (data.type === 'car_status') {
+                        this.updateCarStatus(data.status === 'connected');
+                        if (data.status === 'connected') {
+                            this.showNotification('Carro conectado', 'success');
+                        } else {
+                            this.showNotification('Carro desconectado', 'warning');
+                        }
+                    }
+                    
+                    // Heartbeat (batería)
+                    else if (data.type === 'car_heartbeat') {
+                        this.updateBattery(data.battery);
+                    }
+                    
+                    // Comando ejecutado
+                    else if (data.type === 'command_executed') {
+                        console.log(`✅ Comando "${data.command}" ejecutado`);
+                        this.showNotification(`Comando ${data.command} ejecutado`, 'success');
+                    }
+                    
+                    // MANEJO DE EVENTOS DE MODO
+                    else if (data.event === 'mode_changed') {
+                        this.currentMode = data.autonomous_mode ? 'sequence' : 'manual';
+                        this.updateModeIndicator(this.currentMode);
+                        this.modeChangePending = false;
+                        console.log(`✅ Modo cambiado a: ${this.currentMode}`);
+                    }
+                    
+                    // OBSTÁCULO DETECTADO EN MODO MANUAL
+                    else if ((data.event === 'obstacle_detected' || data.type === 'obstacle_detected') && this.currentMode === 'manual') {
+                        const distance = data.distance || data.obstacle_distance || 0;
+                        this.showObstacleAlertManual(distance);
+                        this.playAlertSound();
+                    }
+                    
+                    // OBSTÁCULO ESQUIVADO EN MODO SECUENCIA
+                    else if (data.event === 'obstacle_avoided' && this.currentMode === 'sequence') {
+                        const distance = data.distance || 0;
+                        this.showObstacleAvoidedAuto(distance);
+                    }
+                    
+                    // MANEJO DE OBSTÁCULOS DEL CARRO
+                    else if (data.type === 'obstacle_detected') {
+                        console.log('🛑 OBSTÁCULO DETECTADO POR EL CARRO:', data);
+                        this.handleObstacleDetection(data);
+                    }
+                    
+                    // Manejo de vía libre
+                    else if (data.type === 'path_clear') {
+                        console.log('✅ VÍA LIBRE:', data);
+                        this.handlePathClear(data);
+                    }
+                    
+                    // Heartbeat con información de obstáculos
+                    else if (data.type === 'car_heartbeat' && data.obstacle_detected !== undefined) {
+                        this.updateObstacleStatusFromHeartbeat(data);
+                    }
+                    
+                    // Respuesta de comando
+                    else if (data.status === 'success') {
+                        console.log(`✅ Comando aceptado por servidor: ${data.message}`);
+                        if (data.cars_reached === 0) {
+                            this.showNotification('No hay carros conectados', 'warning');
+                            this.updateCarStatus(false);
+                        } else {
+                            this.updateCarStatus(true);
+                        }
+                    }
+                    
+                } catch (e) {
+                    console.error('Error procesando mensaje WebSocket:', e);
+                }
+            };
+            
+            this.ws.onerror = (error) => {
+                console.error('❌ WebSocket error:', error);
+                this.showNotification('Error de conexión WebSocket', 'error');
+            };
+            
+            this.ws.onclose = () => {
+                console.log('🔌 WebSocket desconectado');
+                this.updateServerStatus(false);
+                
+                // Reconectar después de 5 segundos
+                setTimeout(() => {
+                    console.log('🔄 Intentando reconectar WebSocket...');
+                    this.connectWebSocket();
+                }, 5000);
+            };
+            
+        } catch (error) {
+            console.error('Error creando WebSocket:', error);
+            this.updateServerStatus(false);
+        }
+    }
+
+    // ==========================================
+    // EJECUCIÓN DE SECUENCIA MEJORADA
+    // ==========================================
+
+    async executeSequenceWithMode(sequenceId) {
+        // Cambiar a modo secuencia
+        this.setMode('sequence');
+        await this.sleep(1000);
+        
+        // Ejecutar secuencia
+        await this.executeSequence(sequenceId);
+        
+        // Al terminar, volver a modo manual
+        this.onSequenceComplete();
+    }
+
+    // ==========================================
+    // EVENT LISTENERS ACTUALIZADOS
+    // ==========================================
 
     initializeEventListeners() {
         // Botones de movimiento
         document.querySelectorAll('.movement-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const operation = parseInt(e.target.closest('button').dataset.operation);
-                this.sendMovementCommand(operation);
+                this.sendWSCommand(operation);
             });
         });
 
@@ -41,14 +365,14 @@ class CarControlApp {
             }
             
             this.showAlert(`Cambiado a: ${e.target.options[e.target.selectedIndex].text}`, 'info');
-            this.loadManualObstacles(); // Recargar obstáculos al cambiar dispositivo
-            this.updateCurrentStatus(); // Actualizar estado al cambiar dispositivo
+            this.loadManualObstacles();
+            this.updateCurrentStatus();
         });
 
-        // Botón modo demo
+        // Botón modo demo ACTUALIZADO
         document.getElementById('demoBtn').addEventListener('click', () => {
             if (!this.isDemoRunning) {
-                this.startDemoMode();
+                this.executeSequenceWithMode(this.getDemoSequenceId());
             } else {
                 this.showAlert('⚠️ Demo ya en ejecución', 'warning');
             }
@@ -57,7 +381,7 @@ class CarControlApp {
         // Botón detener emergencia
         document.getElementById('stopBtn').addEventListener('click', () => {
             this.isDemoRunning = false;
-            this.sendMovementCommand(3);
+            this.sendWSCommand(3);
             this.showAlert('🛑 PARADA DE EMERGENCIA ACTIVADA', 'danger');
         });
 
@@ -81,14 +405,425 @@ class CarControlApp {
             this.saveDevice();
         });
 
+        // Botones de modo manual/automático
+        const manualModeBtn = document.querySelector('[onclick*="setManualMode"]');
+        const autoModeBtn = document.querySelector('[onclick*="setAutoMode"]');
+        
+        if (manualModeBtn) {
+            manualModeBtn.addEventListener('click', () => this.setMode('manual'));
+        }
+        if (autoModeBtn) {
+            autoModeBtn.addEventListener('click', () => this.setMode('sequence'));
+        }
+
         // Inicializar listeners de obstáculos manuales
         this.initializeObstacleListeners();
+
+        // Control con teclado
+        document.addEventListener('keydown', (e) => {
+            if (!this.isWSConnected || !this.carConnected) return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    this.sendWSCommand(1);
+                    e.preventDefault();
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    this.sendWSCommand(2);
+                    e.preventDefault();
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    this.sendWSCommand(9);
+                    e.preventDefault();
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    this.sendWSCommand(8);
+                    e.preventDefault();
+                    break;
+                case ' ':
+                    this.sendWSCommand(3);
+                    e.preventDefault();
+                    break;
+            }
+        });
     }
 
-    // ==================== ACTUALIZACIONES DE ESTADO ====================
+    // ==========================================
+    // FUNCIONES AUXILIARES
+    // ==========================================
+
+    getDemoSequenceId() {
+        if (this.sequences && this.sequences.length > 0) {
+            return this.sequences[0].id_secuencia;
+        }
+        return 1;
+    }
+
+    playAlertSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        } catch (e) {
+            console.log('No se pudo reproducir sonido de alerta');
+        }
+    }
+
+    // ==========================================
+    // FUNCIONES DE MANEJO DE OBSTÁCULOS
+    // ==========================================
+
+    handleObstacleDetection(obstacleData) {
+        this.obstacleStatus = {
+            detected: true,
+            distance: obstacleData.distance || 0,
+            location: obstacleData.location || 'unknown',
+            lastDetection: new Date().toISOString(),
+            action: obstacleData.action || 'stopped'
+        };
+        
+        this.showObstacleAlert(obstacleData);
+        this.updateObstacleUI();
+        
+        this.addToObstacleHistory({
+            id_dispositivo: this.currentDevice,
+            status_obstaculo: this.getObstacleCode(obstacleData.location),
+            status_texto: `Obstáculo detectado a ${obstacleData.distance}cm`,
+            ubicacion: obstacleData.location,
+            descripcion: `Obstáculo automático a ${obstacleData.distance}cm`,
+            automatico: true
+        });
+
+        this.updateButtons();
+    }
+
+    handlePathClear(clearData) {
+        this.obstacleStatus.detected = false;
+        this.obstacleStatus.lastClear = new Date().toISOString();
+        
+        this.showNotification('✅ Vía libre - Obstáculo despejado', 'success');
+        this.updateObstacleUI();
+        this.updateButtons();
+        
+        console.log('🛣️ Vía libre restaurada');
+    }
+
+    updateObstacleStatusFromHeartbeat(heartbeatData) {
+        if (heartbeatData.obstacle_detected && !this.obstacleStatus.detected) {
+            this.handleObstacleDetection({
+                location: heartbeatData.obstacle_location || 'front',
+                distance: heartbeatData.obstacle_distance || 0,
+                action: 'warning'
+            });
+        } else if (!heartbeatData.obstacle_detected && this.obstacleStatus.detected) {
+            this.handlePathClear({});
+        }
+        
+        if (heartbeatData.obstacle_detected) {
+            this.obstacleStatus.distance = heartbeatData.obstacle_distance || 0;
+            this.obstacleStatus.location = heartbeatData.obstacle_location || 'front';
+            this.updateObstacleUI();
+        }
+    }
+
+    showObstacleAlert(obstacleData) {
+        const distance = obstacleData.distance || 0;
+        const location = this.getLocationText(obstacleData.location);
+        
+        const alertMessage = `🛑 OBSTÁCULO DETECTADO\nDistancia: ${distance}cm\nUbicación: ${location}`;
+        
+        this.showAlert(alertMessage, 'danger');
+        this.showWsMessage(`🛑 Obstáculo detectado a ${distance}cm (${location})`, 'danger');
+        this.triggerObstacleVisualAlert();
+    }
+
+    updateObstacleUI() {
+        const obstacleElement = document.getElementById('lastObstacle');
+        const timeElement = document.getElementById('lastObstacleTime');
+        
+        if (obstacleElement && timeElement) {
+            if (this.obstacleStatus.detected) {
+                const locationText = this.getLocationText(this.obstacleStatus.location);
+                obstacleElement.innerHTML = `<span class="text-danger">🛑 Obstáculo a ${this.obstacleStatus.distance}cm (${locationText})</span>`;
+            } else {
+                obstacleElement.innerHTML = `<span class="text-success">✅ Vía libre</span>`;
+            }
+            
+            timeElement.textContent = `Hora: ${new Date().toLocaleTimeString()}`;
+        }
+        
+        this.updateObstacleIndicator();
+    }
+
+    updateObstacleIndicator() {
+        let indicator = document.getElementById('obstacleLiveIndicator');
+        
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'obstacleLiveIndicator';
+            indicator.className = 'obstacle-indicator';
+            indicator.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                padding: 10px 15px;
+                border-radius: 20px;
+                color: white;
+                font-weight: bold;
+                z-index: 9999;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+            `;
+            document.body.appendChild(indicator);
+        }
+        
+        if (this.obstacleStatus.detected) {
+            indicator.innerHTML = `🛑 OBSTÁCULO ${this.obstacleStatus.distance}cm`;
+            indicator.style.backgroundColor = '#dc3545';
+            indicator.style.display = 'block';
+        } else {
+            indicator.style.display = 'none';
+        }
+    }
+
+    triggerObstacleVisualAlert() {
+        const header = document.querySelector('.custom-navbar');
+        if (header) {
+            header.style.backgroundColor = '#dc3545';
+            header.style.transition = 'background-color 0.3s ease';
+            
+            setTimeout(() => {
+                header.style.backgroundColor = '';
+            }, 1000);
+        }
+    }
+
+    getLocationText(location) {
+        const locations = {
+            'front': 'Frente',
+            'front_left': 'Frente-Izquierda',
+            'front_right': 'Frente-Derecha',
+            'left': 'Izquierda',
+            'right': 'Derecha',
+            'back': 'Atrás',
+            'unknown': 'Desconocida'
+        };
+        return locations[location] || location;
+    }
+
+    getObstacleCode(location) {
+        const codes = {
+            'front': 1,
+            'front_left': 2,
+            'front_right': 3,
+            'left': 2,
+            'right': 3,
+            'back': 5
+        };
+        return codes[location] || 1;
+    }
+
+    // ==========================================
+    // BLOQUEO AUTOMÁTICO DE CONTROLES
+    // ==========================================
+
+    updateButtons() {
+        const buttons = document.querySelectorAll('.movement-btn');
+        const shouldEnable = this.isWSConnected && this.carConnected && !this.obstacleStatus.detected;
+        
+        buttons.forEach(btn => {
+            btn.disabled = !shouldEnable;
+            
+            if (!shouldEnable && this.obstacleStatus.detected) {
+                btn.title = '⚠️ Bloqueado - Obstáculo detectado';
+                btn.style.opacity = '0.6';
+                btn.style.cursor = 'not-allowed';
+            } else {
+                btn.title = '';
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            }
+        });
+        
+        const stopBtn = document.getElementById('stopBtn');
+        if (stopBtn) {
+            stopBtn.disabled = !this.isWSConnected;
+        }
+    }
+
+    // ==========================================
+    // FUNCIONES DE ESTADO WEBSOCKET
+    // ==========================================
+
+    updateServerStatus(connected) {
+        this.isWSConnected = connected;
+        
+        const serverStatus = document.getElementById('serverStatus');
+        const serverIndicator = document.getElementById('serverIndicator');
+        
+        if (serverStatus && serverIndicator) {
+            if (connected) {
+                serverStatus.textContent = 'Conectado';
+                serverIndicator.className = 'status-indicator online';
+            } else {
+                serverStatus.textContent = 'Desconectado';
+                serverIndicator.className = 'status-indicator offline';
+                this.updateCarStatus(false);
+            }
+        }
+        
+        this.updateButtons();
+    }
+
+    updateCarStatus(connected) {
+        this.carConnected = connected;
+        
+        const carStatus = document.getElementById('carStatus');
+        const carIndicator = document.getElementById('carIndicator');
+        
+        if (carStatus && carIndicator) {
+            if (connected) {
+                carStatus.textContent = 'Conectado';
+                carIndicator.className = 'status-indicator online';
+            } else {
+                carStatus.textContent = 'Desconectado';
+                carIndicator.className = 'status-indicator offline';
+            }
+        }
+        
+        this.updateButtons();
+    }
+
+    updateBattery(level) {
+        const batteryElement = document.getElementById('batteryLevel');
+        const batteryBar = document.querySelector('.battery-fill');
+        
+        if (batteryElement) {
+            batteryElement.textContent = `${level}%`;
+        }
+        
+        if (batteryBar) {
+            batteryBar.style.width = `${level}%`;
+            
+            if (level > 60) {
+                batteryBar.style.backgroundColor = '#4CAF50';
+            } else if (level > 30) {
+                batteryBar.style.backgroundColor = '#FFC107';
+            } else {
+                batteryBar.style.backgroundColor = '#F44336';
+            }
+        }
+    }
+
+    // ==========================================
+    // NOTIFICACIONES WEBSOCKET
+    // ==========================================
+
+    showNotification(message, type = 'info') {
+        console.log(`[${type.toUpperCase()}] ${message}`);
+        this.showWsMessage(message, type);
+    }
+
+    // ==========================================
+    // ENVIAR COMANDOS WEBSOCKET
+    // ==========================================
+
+    sendWSCommand(operationId) {
+        const operation = this.OPERATIONS[operationId];
+        
+        if (!operation) {
+            console.error(`Operación ${operationId} no encontrada`);
+            this.showNotification(`Operación ${operationId} no encontrada`, 'error');
+            return;
+        }
+        
+        if (!this.isWSConnected) {
+            this.showNotification('No conectado al servidor WebSocket', 'error');
+            return;
+        }
+
+        // Verificar obstáculos antes de movimientos hacia adelante
+        if ((operation.command === 'forward' || 
+             operation.command === 'curve_forward_right' || 
+             operation.command === 'curve_forward_left') && 
+            this.obstacleStatus.detected) {
+            
+            console.log('🚫 Movimiento bloqueado - Obstáculo detectado');
+            this.showNotification(`⚠️ Movimiento bloqueado - Obstáculo detectado a ${this.obstacleStatus.distance}cm`, 'warning');
+            
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                const blockedMessage = {
+                    type: 'movement_blocked',
+                    command: operation.command,
+                    reason: 'obstacle_detected',
+                    distance: this.obstacleStatus.distance,
+                    location: this.obstacleStatus.location,
+                    timestamp: new Date().toISOString()
+                };
+                this.ws.send(JSON.stringify(blockedMessage));
+            }
+            return;
+        }
+        
+        const message = {
+            command: operation.command,
+            duration: operation.duration,
+            timestamp: new Date().toISOString()
+        };
+        
+        console.log(`📤 Enviando comando al servidor: ${operation.name}`);
+        console.log(`   Comando API: ${operation.command}`);
+        console.log(`   Duración: ${operation.duration}ms`);
+        
+        try {
+            this.ws.send(JSON.stringify(message));
+            this.showNotification(`Ejecutando: ${operation.name}`, 'info');
+            
+            this.addToCommandHistory({
+                id_dispositivo: this.currentDevice,
+                status_operacion: operationId,
+                status_texto: this.getOperationText(operationId)
+            });
+            
+            const button = document.querySelector(`[data-operation="${operationId}"]`);
+            if (button) {
+                button.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    button.style.transform = 'scale(1)';
+                }, 100);
+            }
+            
+        } catch (error) {
+            console.error('Error enviando comando WebSocket:', error);
+            this.showNotification('Error enviando comando', 'error');
+        }
+    }
+
+    // ==========================================
+    // ACTUALIZACIONES DE ESTADO
+    // ==========================================
 
     initializeStatusUpdates() {
-        // Actualizar timestamp periódicamente
         setInterval(() => {
             this.updateStatusTimestamp();
         }, 1000);
@@ -134,23 +869,23 @@ class CarControlApp {
         }
     }
 
-    // ==================== SINCronización CON APP MONITOREO ====================
+    // ==========================================
+    // SINCRONIZACIÓN CON APP MONITOREO
+    // ==========================================
 
     initializeSyncFeatures() {
         this.setupMonitoringSync();
     }
 
     setupMonitoringSync() {
-        // Enviar estado periódicamente
         setInterval(() => {
             this.syncMonitoringApp();
-        }, 10000); // Cada 10 segundos
+        }, 10000);
     }
 
     syncMonitoringApp() {
         if (!this.isConnected) return;
         
-        // Enviar estadísticas actuales
         this.socket.emit('monitoring_sync', {
             type: 'status_update',
             device_id: this.currentDevice,
@@ -160,12 +895,17 @@ class CarControlApp {
                 total_obstacles: this.getTotalObstacles(),
                 is_demo_running: this.isDemoRunning,
                 connection_status: this.isConnected ? 'connected' : 'disconnected',
-                current_device: this.currentDevice
+                current_device: this.currentDevice,
+                ws_connected: this.isWSConnected,
+                car_connected: this.carConnected,
+                obstacle_detected: this.obstacleStatus.detected,
+                obstacle_distance: this.obstacleStatus.distance,
+                obstacle_location: this.obstacleStatus.location,
+                current_mode: this.currentMode
             }
         });
     }
 
-    // Métodos auxiliares para estadísticas
     getTotalCommands() {
         return this.commandHistory ? this.commandHistory.length : 0;
     }
@@ -174,7 +914,6 @@ class CarControlApp {
         return this.obstacleHistory ? this.obstacleHistory.length : 0;
     }
 
-    // Métodos para registrar eventos en el historial
     addToCommandHistory(commandData) {
         if (!this.commandHistory) {
             this.commandHistory = [];
@@ -184,15 +923,11 @@ class CarControlApp {
             timestamp: new Date().toISOString()
         });
         
-        // Limitar historial a 1000 elementos
         if (this.commandHistory.length > 1000) {
             this.commandHistory = this.commandHistory.slice(-500);
         }
         
-        // Actualizar último movimiento
         this.updateLastMovement(commandData.status_texto);
-        
-        // Sincronizar con app de monitoreo
         this.syncMonitoringApp();
     }
 
@@ -205,22 +940,19 @@ class CarControlApp {
             timestamp: new Date().toISOString()
         });
         
-        // Limitar historial a 1000 elementos
         if (this.obstacleHistory.length > 1000) {
             this.obstacleHistory = this.obstacleHistory.slice(-500);
         }
         
-        // Actualizar último obstáculo
         this.updateLastObstacle(obstacleData.status_texto);
-        
-        // Sincronizar con app de monitoreo
         this.syncMonitoringApp();
     }
 
-    // ==================== OBSTÁCULOS MANUALES ====================
+    // ==========================================
+    // OBSTÁCULOS MANUALES
+    // ==========================================
 
     initializeObstacleListeners() {
-        // Botones de obstáculos manuales
         document.querySelectorAll('.obstacle-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const ubicacion = e.target.closest('button').dataset.ubicacion;
@@ -228,7 +960,6 @@ class CarControlApp {
             });
         });
 
-        // Botón limpiar obstáculos
         const clearObstaclesBtn = document.getElementById('clearObstaclesBtn');
         if (clearObstaclesBtn) {
             clearObstaclesBtn.addEventListener('click', () => {
@@ -243,13 +974,12 @@ class CarControlApp {
             return;
         }
 
-        // Mapear ubicación a tipo de obstáculo
         const obstacleMapping = {
-            'frente': 1,      // Adelante
-            'izquierda': 2,   // Adelante-Izquierda  
-            'derecha': 3,     // Adelante-Derecha
-            'atras': 5,       // Retrocede
-            'retroceso': 5    // Retrocede (emergencia)
+            'frente': 1,
+            'izquierda': 2,
+            'derecha': 3,
+            'atras': 5,
+            'retroceso': 5
         };
 
         const status_obstaculo = obstacleMapping[ubicacion];
@@ -277,7 +1007,6 @@ class CarControlApp {
                 this.showAlert(`✅ Obstáculo en ${ubicacion} registrado`, 'success');
                 this.showWsMessage(`🛑 Obstáculo manual: ${descripcion}`, 'warning');
                 
-                // Agregar al historial y sincronizar
                 this.addToObstacleHistory({
                     ...obstacleData,
                     status_texto: this.getObstacleText(status_obstaculo)
@@ -351,7 +1080,7 @@ class CarControlApp {
             if (data.status === 'success') {
                 this.showAlert('✅ Obstáculo manual eliminado', 'success');
                 this.loadManualObstacles();
-                this.syncMonitoringApp(); // Sincronizar después de eliminar
+                this.syncMonitoringApp();
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -369,13 +1098,12 @@ class CarControlApp {
         try {
             const obstacles = await this.getCurrentManualObstacles();
             
-            // Eliminar uno por uno
             for (const obstacle of obstacles) {
                 await this.deleteManualObstacle(obstacle.id_evento);
             }
             
             this.showAlert('✅ Todos los obstáculos manuales eliminados', 'success');
-            this.syncMonitoringApp(); // Sincronizar después de limpiar
+            this.syncMonitoringApp();
         } catch (error) {
             console.error('Error clearing manual obstacles:', error);
             this.showAlert('⚠️ Error al limpiar obstáculos', 'danger');
@@ -392,7 +1120,9 @@ class CarControlApp {
         }
     }
 
-    // ==================== DISPOSITIVOS ====================
+    // ==========================================
+    // DISPOSITIVOS
+    // ==========================================
 
     async loadDevices() {
         try {
@@ -404,8 +1134,8 @@ class CarControlApp {
                 this.populateDeviceSelect(data.data);
                 this.renderDevicesList(data.data);
                 this.showWsMessage('✅ Dispositivos cargados correctamente', 'success');
-                this.loadManualObstacles(); // Cargar obstáculos al iniciar
-                this.updateCurrentStatus(); // Actualizar estado al cargar dispositivos
+                this.loadManualObstacles();
+                this.updateCurrentStatus();
             }
         } catch (error) {
             console.error('Error loading devices:', error);
@@ -444,7 +1174,9 @@ class CarControlApp {
         });
     }
 
-    // ==================== DISPOSITIVOS CRUD ====================
+    // ==========================================
+    // DISPOSITIVOS CRUD
+    // ==========================================
 
     async saveDevice() {
         const id = document.getElementById('deviceId').value;
@@ -486,7 +1218,7 @@ class CarControlApp {
                 this.showAlert(`✅ Dispositivo ${id ? 'actualizado' : 'creado'} correctamente`, 'success');
                 bootstrap.Modal.getInstance(document.getElementById('deviceModal')).hide();
                 await this.loadDevices();
-                this.syncMonitoringApp(); // Sincronizar después de guardar dispositivo
+                this.syncMonitoringApp();
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -511,7 +1243,7 @@ class CarControlApp {
             if (data.status === 'success') {
                 this.showAlert('✅ Dispositivo eliminado correctamente', 'success');
                 await this.loadDevices();
-                this.syncMonitoringApp(); // Sincronizar después de eliminar
+                this.syncMonitoringApp();
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -575,7 +1307,6 @@ class CarControlApp {
         document.getElementById('deviceSelect').value = deviceId;
         document.getElementById('deviceSelect').dispatchEvent(new Event('change'));
         
-        // Scroll al panel de control
         document.getElementById('control-section').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -596,7 +1327,9 @@ class CarControlApp {
         modal.show();
     }
 
-    // ==================== SECUENCIAS ====================
+    // ==========================================
+    // SECUENCIAS
+    // ==========================================
 
     async loadSequences() {
         try {
@@ -631,7 +1364,6 @@ class CarControlApp {
         }
 
         container.innerHTML = sequences.map(seq => {
-            // Obtener las operaciones como array (compatible con ambas estructuras)
             const operationsArray = Array.isArray(seq.operaciones) ? 
                 seq.operaciones : 
                 (seq.operaciones ? seq.operaciones.split(',').map(op => parseInt(op.trim())) : []);
@@ -654,7 +1386,7 @@ class CarControlApp {
                         </div>
                         <div class="card-footer bg-transparent border-0">
                             <div class="btn-group w-100" role="group">
-                                <button class="btn btn-sm custom-btn-demo" onclick="app.executeSequence(${seq.id_secuencia})">
+                                <button class="btn btn-sm custom-btn-demo" onclick="app.executeSequenceWithMode(${seq.id_secuencia})">
                                     <i class="bi bi-play-fill"></i> Ejecutar
                                 </button>
                                 <button class="btn btn-sm custom-btn-primary" onclick="app.openSequenceModal(${JSON.stringify(seq).replace(/"/g, '&quot;')})">
@@ -680,7 +1412,6 @@ class CarControlApp {
             document.getElementById('sequenceName').value = sequence.nombre_secuencia;
             document.getElementById('sequenceDevice').value = sequence.id_dispositivo;
             
-            // Convertir operaciones a string separado por comas (compatible con ambas estructuras)
             let operationsString;
             if (Array.isArray(sequence.operaciones)) {
                 operationsString = sequence.operaciones.join(',');
@@ -709,7 +1440,6 @@ class CarControlApp {
             return;
         }
 
-        // Validar que las operaciones sean números separados por comas
         const opsArray = operations.split(',').map(op => parseInt(op.trim()));
         const validOps = opsArray.every(op => !isNaN(op) && op >= 1 && op <= 11);
         
@@ -718,22 +1448,19 @@ class CarControlApp {
             return;
         }
 
-        // Preparar datos para la estructura de base de datos
         const sequenceData = {
             id_dispositivo: device,
             nombre_secuencia: name,
-            movimientos: opsArray  // Enviar como array para la nueva estructura
+            movimientos: opsArray
         };
 
         try {
             let url, method;
             
             if (id) {
-                // Para editar
                 url = `${this.apiBaseUrl}/api/sequences/${id}`;
                 method = 'PUT';
             } else {
-                // Para crear nueva
                 url = `${this.apiBaseUrl}/api/sequences`;
                 method = 'POST';
             }
@@ -752,7 +1479,7 @@ class CarControlApp {
                 this.showAlert(`✅ Secuencia ${id ? 'actualizada' : 'creada'} correctamente`, 'success');
                 bootstrap.Modal.getInstance(document.getElementById('sequenceModal')).hide();
                 await this.loadSequences();
-                this.syncMonitoringApp(); // Sincronizar después de guardar secuencia
+                this.syncMonitoringApp();
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -777,7 +1504,7 @@ class CarControlApp {
             if (data.status === 'success') {
                 this.showAlert('✅ Secuencia eliminada', 'success');
                 await this.loadSequences();
-                this.syncMonitoringApp(); // Sincronizar después de eliminar
+                this.syncMonitoringApp();
             } else {
                 this.showAlert(`❌ Error: ${data.message}`, 'danger');
             }
@@ -788,8 +1515,8 @@ class CarControlApp {
     }
 
     async executeSequence(sequenceId) {
-        if (!this.isConnected) {
-            this.showAlert('❌ No conectado al servidor', 'danger');
+        if (!this.isWSConnected) {
+            this.showAlert('❌ No conectado al servidor WebSocket', 'danger');
             return;
         }
 
@@ -806,13 +1533,11 @@ class CarControlApp {
 
         this.isDemoRunning = true;
         
-        // Cambiar al dispositivo de la secuencia si es diferente
         if (sequence.id_dispositivo !== this.currentDevice) {
             document.getElementById('deviceSelect').value = sequence.id_dispositivo;
             document.getElementById('deviceSelect').dispatchEvent(new Event('change'));
         }
 
-        // Obtener operaciones (compatible con ambas estructuras)
         let operations;
         if (Array.isArray(sequence.operaciones)) {
             operations = sequence.operaciones;
@@ -829,12 +1554,23 @@ class CarControlApp {
                 break;
             }
 
+            // Verificar obstáculos antes de cada movimiento
+            if (this.obstacleStatus.detected) {
+                const op = operations[i];
+                const opText = this.getOperationText(op);
+                
+                // Si hay obstáculo y el movimiento es hacia adelante, saltarlo
+                if (op === 1 || op === 4 || op === 5) {
+                    this.showWsMessage(`⏭️ Saltando movimiento (${opText}) - Obstáculo detectado`, 'warning');
+                    continue;
+                }
+            }
+
             const op = operations[i];
-            await this.sendMovementCommand(op);
+            this.sendWSCommand(op);
             const opText = this.getOperationText(op);
             this.showWsMessage(`🎬 [${i + 1}/${operations.length}] ${opText}`, 'info');
             
-            // Esperar 2 segundos entre operaciones
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
 
@@ -844,10 +1580,12 @@ class CarControlApp {
         }
 
         this.isDemoRunning = false;
-        this.syncMonitoringApp(); // Sincronizar después de completar secuencia
+        this.syncMonitoringApp();
     }
 
-    // ==================== SOCKET.IO ====================
+    // ==========================================
+    // SOCKET.IO
+    // ==========================================
     
     connectSocketIO() {
         try {
@@ -866,25 +1604,25 @@ class CarControlApp {
                 this.updateConnectionStatus('Conectado ✅', 'success');
                 this.showAlert('✅ Conectado al servidor IoT', 'success');
                 this.showWsMessage('🔗 Socket.IO conectado exitosamente', 'success');
-                this.updateCurrentStatus(); // Actualizar estado al conectar
+                this.updateCurrentStatus();
                 
                 this.socket.emit('subscribe_device', { device_id: this.currentDevice });
-                this.syncMonitoringApp(); // Sincronizar al conectar
+                this.syncMonitoringApp();
             });
 
             this.socket.on('disconnect', () => {
                 this.isConnected = false;
                 this.updateConnectionStatus('Desconectado ❌', 'danger');
                 this.showWsMessage('🔌 Conexión perdida. Reintentando...', 'warning');
-                this.updateCurrentStatus(); // Actualizar estado al desconectar
-                this.syncMonitoringApp(); // Sincronizar al desconectar
+                this.updateCurrentStatus();
+                this.syncMonitoringApp();
             });
 
             this.socket.on('connect_error', (error) => {
                 console.error('Connection error:', error);
                 this.updateConnectionStatus('Error ❌', 'danger');
                 this.showWsMessage('❌ Error de conexión. Verificando servidor...', 'danger');
-                this.updateCurrentStatus(); // Actualizar estado en error
+                this.updateCurrentStatus();
             });
 
             this.socket.on('connection_response', (data) => {
@@ -900,7 +1638,6 @@ class CarControlApp {
                     const operationText = this.getOperationText(data.data.status_operacion);
                     this.showWsMessage(`🚗 Comando confirmado: ${operationText}`, 'success');
                     
-                    // Agregar al historial de comandos
                     this.addToCommandHistory(data.data);
                 }
             });
@@ -909,19 +1646,18 @@ class CarControlApp {
                 if (data.type === 'new_obstacle' && data.data) {
                     this.showWsMessage(`🛡️ Obstáculo detectado: ${data.data.status_texto}`, 'warning');
                     
-                    // Agregar al historial de obstáculos
                     this.addToObstacleHistory(data.data);
                 }
                 if (data.type === 'manual_obstacle_created' || data.type === 'manual_obstacle_deleted') {
-                    this.loadManualObstacles(); // Actualizar lista cuando hay cambios
-                    this.syncMonitoringApp(); // Sincronizar cambios de obstáculos
+                    this.loadManualObstacles();
+                    this.syncMonitoringApp();
                 }
             });
 
             this.socket.on('sequence_update', (data) => {
                 if (data.type === 'sequence_created' || data.type === 'sequence_updated' || data.type === 'sequence_deleted') {
                     this.loadSequences();
-                    this.syncMonitoringApp(); // Sincronizar cambios de secuencias
+                    this.syncMonitoringApp();
                 }
             });
 
@@ -931,7 +1667,9 @@ class CarControlApp {
         }
     }
 
-    // ==================== COMANDOS ====================
+    // ==========================================
+    // COMANDOS
+    // ==========================================
     
     async sendMovementCommand(operation) {
         if (!this.isConnected) {
@@ -965,7 +1703,6 @@ class CarControlApp {
                 this.showAlert(`✅ Comando enviado: ${operationText}`, 'success');
                 this.showWsMessage(`📤 Enviado a ${deviceName}: ${operationText}`, 'info');
                 
-                // Agregar al historial y sincronizar
                 this.addToCommandHistory({
                     ...commandData,
                     status_texto: operationText,
@@ -986,14 +1723,14 @@ class CarControlApp {
             1: '🚗 Adelante',
             2: '🚗 Atrás', 
             3: '🛑 Detener',
-            4: '↗️ Vuelta adelante derecha',
-            5: '↖️ Vuelta adelante izquierda',
-            6: '↘️ Vuelta atrás derecha',
-            7: '↙️ Vuelta atrás izquierda',
-            8: '↷ Giro 90° derecha',
-            9: '↶ Giro 90° izquierda',
-            10: '⟳ Giro 360° derecha',
-            11: '⟲ Giro 360° izquierda'
+            4: '↗️ Vuelta Adelante Der.',
+            5: '↖️ Vuelta Adelante Izq.',
+            6: '↘️ Vuelta Atrás Der.',
+            7: '↙️ Vuelta Atrás Izq.',
+            8: '↷ Giro 90° Derecha',
+            9: '↶ Giro 90° Izquierda',
+            10: '⟳ Giro 360° Derecha',
+            11: '⟲ Giro 360° Izquierda'
         };
         return operations[operation] || `Operación ${operation}`;
     }
@@ -1009,11 +1746,13 @@ class CarControlApp {
         return obstacles[obstacle] || `Obstáculo ${obstacle}`;
     }
 
-    // ==================== DEMO RÁPIDO ====================
+    // ==========================================
+    // DEMO RÁPIDO
+    // ==========================================
     
     async startDemoMode() {
-        if (!this.isConnected) {
-            this.showAlert('❌ No conectado al servidor', 'danger');
+        if (!this.isWSConnected) {
+            this.showAlert('❌ No conectado al servidor WebSocket', 'danger');
             return;
         }
 
@@ -1041,8 +1780,14 @@ class CarControlApp {
                 break;
             }
 
+            // Verificar obstáculos antes de cada movimiento
+            if (this.obstacleStatus.detected && demoSequence[i].op === 1) {
+                this.showWsMessage(`⏭️ Saltando movimiento adelante - Obstáculo detectado`, 'warning');
+                continue;
+            }
+
             const step = demoSequence[i];
-            await this.sendMovementCommand(step.op);
+            this.sendWSCommand(step.op);
             this.showWsMessage(`🔧 Demo [${i + 1}/${demoSequence.length}]: ${step.text}`, 'info');
             
             await new Promise(resolve => setTimeout(resolve, step.delay));
@@ -1054,10 +1799,12 @@ class CarControlApp {
         }
 
         this.isDemoRunning = false;
-        this.syncMonitoringApp(); // Sincronizar después del demo
+        this.syncMonitoringApp();
     }
 
-    // ==================== UI HELPERS ====================
+    // ==========================================
+    // UI HELPERS
+    // ==========================================
     
     updateConnectionStatus(text, type) {
         const statusElements = document.querySelectorAll('#connectionStatus, #connectionStatusDisplay');
@@ -1116,6 +1863,27 @@ class CarControlApp {
 let app;
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Iniciando Control Carro IoT con CRUD...');
+    console.log('🚀 Iniciando Control Carro IoT con WebSocket...');
     app = new CarControlApp();
+});
+
+// ==========================================
+// FUNCIONES GLOBALES PARA HTML
+// ==========================================
+
+function setManualMode() {
+    if (app) app.setMode('manual');
+}
+
+function setAutoMode() {
+    if (app) app.setMode('sequence');
+}
+
+// ==========================================
+// MANEJO DE CIERRE WEBSOCKET
+// ==========================================
+window.addEventListener('beforeunload', function() {
+    if (app && app.ws) {
+        app.ws.close();
+    }
 });

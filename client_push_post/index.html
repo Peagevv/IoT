@@ -90,24 +90,39 @@
 
                             <!-- Controles Avanzados -->
                             <div class="row mt-4">
-                                <div class="col-md-3">
+                                <!-- VUELTAS ADELANTE -->
+                                <div class="col-md-3 mb-3">
                                     <button class="btn custom-btn-info movement-btn w-100" data-operation="4">
-                                        <i class="bi bi-arrow-up-right"></i><br>Vuelta Der.
+                                        <i class="bi bi-arrow-up-right"></i><br>Vuelta Adelante Der.
                                     </button>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 mb-3">
                                     <button class="btn custom-btn-info movement-btn w-100" data-operation="5">
-                                        <i class="bi bi-arrow-up-left"></i><br>Vuelta Izq.
+                                        <i class="bi bi-arrow-up-left"></i><br>Vuelta Adelante Izq.
                                     </button>
                                 </div>
-                                <div class="col-md-3">
-                                    <button class="btn custom-btn-secondary movement-btn w-100" data-operation="10">
-                                        <i class="bi bi-arrow-clockwise"></i><br>Giro 360° Der.
+                                
+                                <!-- VUELTAS ATRÁS -->
+                                <div class="col-md-3 mb-3">
+                                    <button class="btn custom-btn-secondary movement-btn w-100" data-operation="6">
+                                        <i class="bi bi-arrow-down-right"></i><br>Vuelta Atrás Der.
                                     </button>
                                 </div>
-                                <div class="col-md-3">
-                                    <button class="btn custom-btn-secondary movement-btn w-100" data-operation="11">
-                                        <i class="bi bi-arrow-counterclockwise"></i><br>Giro 360° Izq.
+                                <div class="col-md-3 mb-3">
+                                    <button class="btn custom-btn-secondary movement-btn w-100" data-operation="7">
+                                        <i class="bi bi-arrow-down-left"></i><br>Vuelta Atrás Izq.
+                                    </button>
+                                </div>
+                                
+                                <!-- GIROS 360° -->
+                                <div class="col-md-6 mb-3">
+                                    <button class="btn custom-btn-warning movement-btn w-100" data-operation="10">
+                                        <i class="bi bi-arrow-clockwise"></i><br>Giro 360° Derecha
+                                    </button>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <button class="btn custom-btn-warning movement-btn w-100" data-operation="11">
+                                        <i class="bi bi-arrow-counterclockwise"></i><br>Giro 360° Izquierda
                                     </button>
                                 </div>
                             </div>
@@ -334,7 +349,7 @@
                 <div class="card custom-card">
                     <div class="card-header custom-card-header-secondary">
                         <h5 class="mb-0">
-                            <i class="bi bi-info-circle"></i> Referencia de Operaciones
+                            <i class="bi bi-info-circle"></i> Referencia de Operaciones (11 Movimientos)
                         </h5>
                     </div>
                     <div class="card-body">
@@ -355,20 +370,30 @@
                                 </ul>
                             </div>
                             <div class="col-md-3">
-                                <strong>Vueltas:</strong>
+                                <strong>Vueltas Adelante:</strong>
                                 <ul class="list-unstyled">
                                     <li>4 - Vuelta adelante derecha</li>
                                     <li>5 - Vuelta adelante izquierda</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Vueltas Atrás:</strong>
+                                <ul class="list-unstyled">
                                     <li>6 - Vuelta atrás derecha</li>
                                     <li>7 - Vuelta atrás izquierda</li>
                                 </ul>
                             </div>
-                            <div class="col-md-3">
-                                <strong>Especiales:</strong>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Giros 360°:</strong>
                                 <ul class="list-unstyled">
                                     <li>10 - Giro 360° derecha</li>
                                     <li>11 - Giro 360° izquierda</li>
                                 </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Total: 11 movimientos</strong>
                             </div>
                         </div>
                     </div>
@@ -409,7 +434,27 @@
                             <label class="form-label"><strong>Operaciones (separadas por comas):</strong></label>
                             <input type="text" class="form-control" id="sequenceOperations" required 
                                    placeholder="Ej: 1,8,1,9,1,8,1,9,3">
-                            <small class="text-muted">Ingresa los números de operación separados por comas. Ejemplo: 1,8,1,9,3</small>
+                            <small class="text-muted">Ingresa los números de operación del 1 al 11 separados por comas. Ejemplo: 1,8,1,9,3</small>
+                        </div>
+
+                        <!-- Referencia rápida de operaciones -->
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Referencia de Operaciones:</h6>
+                                <div class="row small">
+                                    <div class="col-4">1: Adelante</div>
+                                    <div class="col-4">2: Atrás</div>
+                                    <div class="col-4">3: Detener</div>
+                                    <div class="col-4">4: Vuelta Adel Der</div>
+                                    <div class="col-4">5: Vuelta Adel Izq</div>
+                                    <div class="col-4">6: Vuelta Atrás Der</div>
+                                    <div class="col-4">7: Vuelta Atrás Izq</div>
+                                    <div class="col-4">8: Giro 90° Der</div>
+                                    <div class="col-4">9: Giro 90° Izq</div>
+                                    <div class="col-4">10: Giro 360° Der</div>
+                                    <div class="col-4">11: Giro 360° Izq</div>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
