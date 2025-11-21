@@ -2,6 +2,7 @@ import asyncio
 import websockets
 import json
 import logging
+import aiohttp
 from datetime import datetime
 
 logging.basicConfig(
@@ -19,6 +20,58 @@ print("=" * 60)
 
 connected_cars = {}
 connected_clients = set()
+
+# Configuración de la API
+API_BASE_URL = "http://localhost:5500"  # Ajusta según tu configuración
+
+async def registrar_obstaculo_en_bd(obstacle_data):
+    """Registra un obstáculo en la base de datos via API"""
+    try:
+        # Mapear los datos del carro a la estructura esperada por la API
+        obstacle_mapping = {
+            "obstacle_detected": 1,  # Obstáculo adelante
+            "obstacle_avoided_auto": 4  # Obstáculo múltiple (esquivado)
+        }
+        
+        status_obstaculo = obstacle_mapping.get(obstacle_data.get("event"), 1)
+        
+        # Determinar ubicación basada en la información del obstáculo
+        location = obstacle_data.get("location", "front")
+        ubicacion_map = {
+            "front": "frente",
+            "left": "izquierda", 
+            "right": "derecha",
+            "back": "atras"
+        }
+        ubicacion = ubicacion_map.get(location, "frente")
+        
+        # Crear payload para la API
+        payload = {
+            "id_dispositivo": 1,  # ID por defecto, puedes ajustar según necesidad
+            "status_obstaculo": status_obstaculo,
+            "ubicacion": ubicacion,
+            "descripcion": f"Obstáculo detectado a {obstacle_data.get('distance', 0)}cm - {obstacle_data.get('event', 'unknown')}",
+            "automatico": True
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{API_BASE_URL}/api/obstacles/manual",
+                json=payload,
+                headers={"Content-Type": "application/json"}
+            ) as response:
+                
+                if response.status == 200:
+                    result = await response.json()
+                    if result.get("status") == "success":
+                        print(f"✅ Obstáculo registrado en BD: {obstacle_data.get('event')}")
+                    else:
+                        print(f"⚠️ API respondió con error: {result.get('message')}")
+                else:
+                    print(f"❌ Error HTTP {response.status} al registrar obstáculo")
+                    
+    except Exception as e:
+        print(f"💥 Error registrando obstáculo en BD: {e}")
 
 async def broadcast_to_cars(message):
     """Envía un mensaje a todos los carros conectados"""
@@ -46,7 +99,7 @@ async def broadcast_to_clients(message):
             try:
                 await websocket.send(json.dumps(message))
             except Exception as e:
-                disconnected.add(websocket)
+                disconnected.append(websocket)
         
         for websocket in disconnected:
             connected_clients.discard(websocket)
@@ -120,6 +173,36 @@ async def car_handler(websocket):
                         "message": "Confirmación recibida",
                         "timestamp": datetime.now().isoformat()
                     }
+                
+                # 🆕 REGISTRAR OBSTÁCULO EN BD VIA API
+                elif data.get("event") in ["obstacle_detected", "obstacle_avoided", "obstacle_avoidance_failed"]:
+                    print(f"🛑 EVENTO DE OBSTÁCULO: {data.get('event')}")
+                    
+                    # Registrar en base de datos
+                    asyncio.create_task(registrar_obstaculo_en_bd(data))
+                    
+                    # Notificar a todos los clientes
+                    await broadcast_to_clients(data)
+                    
+                    response = {
+                        "status": "ok",
+                        "message": f"Evento {data.get('event')} procesado",
+                        "timestamp": datetime.now().isoformat()
+                    }
+                
+                # 🆕 MANEJO DE TIPOS DE OBSTÁCULOS ESPECÍFICOS
+                elif data.get("type") in ["obstacle_detected", "path_clear", "autonomous_action"]:
+                    print(f"📊 EVENTO DEL CARRO: {data.get('type')}")
+                    
+                    # Notificar a todos los clientes
+                    await broadcast_to_clients(data)
+                    
+                    response = {
+                        "status": "ok",
+                        "message": f"Evento {data.get('type')} procesado",
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    
                 else:
                     response = {
                         "status": "ok", 
@@ -181,31 +264,39 @@ async def client_handler(websocket):
             try:
                 data = json.loads(message)
                 
-                # Lista de TODOS los comandos válidos
+                # 🆕 Lista COMPLETA de comandos válidos (incluyendo set_speed)
                 valid_commands = [
                     'forward', 'backward', 'stop',
                     'curve_forward_right', 'curve_forward_left',
                     'curve_backward_right', 'curve_backward_left',
                     'turn_right', 'turn_left',
-                    'spin_right', 'spin_left'
+                    'spin_right', 'spin_left',
+                    'set_speed',        # 🆕 Comando de velocidad
+                    'set_mode',         # 🆕 Comando de modo
+                    'toggle_autonomous' # 🆕 Toggle modo autónomo
                 ]
                 
                 if data.get("command") in valid_commands:
                     print(f"🎮 Cliente solicitó comando: {data.get('command')}")
                     
+                    # 🆕 Retransmitir TODO el mensaje al carro (incluyendo speed)
                     car_command = {
                         "status": "ok",
                         "command": data.get("command"),
                         "duration": data.get("duration", 1000),
+                        "speed": data.get("speed", 150),  # 🆕 Incluir velocidad
+                        "mode": data.get("mode", "manual"), # 🆕 Incluir modo
                         "timestamp": datetime.now().isoformat()
                     }
                     
+                    print(f"📡 Retransmitiendo al carro: {car_command}")
                     await broadcast_to_cars(car_command)
                     
                     response = {
                         "status": "success",
                         "message": f"Comando '{data.get('command')}' enviado al carro",
                         "cars_reached": len(connected_cars),
+                        "command_sent": data.get('command'),  # 🆕 Incluir comando en respuesta
                         "timestamp": datetime.now().isoformat()
                     }
                 else:
@@ -264,6 +355,11 @@ async def main():
             print("🛣️  Rutas disponibles:")
             print("   - /car     → Para carros Arduino")
             print("   - /client  → Para clientes web")
+            print("🎯 Funcionalidades:")
+            print("   - ✅ Comunicación bidireccional")
+            print("   - ✅ Control de carros en tiempo real")
+            print("   - 🆕 Registro automático de obstáculos en BD")
+            print("   - 🆕 Notificaciones de eventos del carro")
             print("🎯 Esperando conexiones...")
             print("-" * 60)
             
