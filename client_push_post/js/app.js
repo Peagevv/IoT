@@ -25,6 +25,18 @@ class CarControlApp {
         this.modeChangePending = false;
         
         // ==========================================
+        // CONTROL DE VELOCIDAD
+        // ==========================================
+        this.currentSpeed = 'medium'; // Velocidad por defecto
+        
+        // Mapeo de velocidades a valores PWM para el Arduino
+        this.SPEED_VALUES = {
+            low: 100,      // ~40% velocidad
+            medium: 150,   // ~60% velocidad (actual)
+            high: 200      // ~80% velocidad
+        };
+        
+        // ==========================================
         // MAPEO CORREGIDO PARA COINCIDIR CON LA API
         // ==========================================
         this.OPERATIONS = {
@@ -70,6 +82,38 @@ class CarControlApp {
         this.initializeSyncFeatures();
         this.initializeStatusUpdates();
         this.connectWebSocket();
+    }
+
+    // ==========================================
+    // CONTROL DE VELOCIDAD
+    // ==========================================
+
+    setSpeed(speed) {
+        this.currentSpeed = speed;
+        
+        // Actualizar UI
+        document.querySelectorAll('.speed-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`.speed-btn[data-speed="${speed}"]`).classList.add('active');
+        
+        // Actualizar badge
+        const badge = document.getElementById('currentSpeed');
+        badge.textContent = speed === 'low' ? 'Baja' : speed === 'medium' ? 'Media' : 'Alta';
+        badge.className = 'badge ' + (speed === 'low' ? 'bg-success' : speed === 'medium' ? 'bg-warning' : 'bg-danger');
+        
+        // Enviar al Arduino
+        if (this.isWSConnected) {
+            const message = {
+                command: 'set_speed',
+                speed: this.SPEED_VALUES[speed],
+                timestamp: new Date().toISOString()
+            };
+            
+            this.ws.send(JSON.stringify(message));
+            console.log(`⚡ Velocidad cambiada a: ${speed} (${this.SPEED_VALUES[speed]} PWM)`);
+            this.showNotification(`Velocidad: ${badge.textContent}`, 'info');
+        }
     }
 
     // ==========================================
@@ -354,6 +398,14 @@ class CarControlApp {
             });
         });
 
+        // Botones de velocidad
+        document.querySelectorAll('.speed-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const speed = e.target.closest('button').dataset.speed;
+                this.setSpeed(speed);
+            });
+        });
+
         // Selector de dispositivo
         document.getElementById('deviceSelect').addEventListener('change', (e) => {
             const oldDevice = this.currentDevice;
@@ -452,8 +504,97 @@ class CarControlApp {
                     this.sendWSCommand(3);
                     e.preventDefault();
                     break;
+                case '1':
+                    this.setSpeed('low');
+                    e.preventDefault();
+                    break;
+                case '2':
+                    this.setSpeed('medium');
+                    e.preventDefault();
+                    break;
+                case '3':
+                    this.setSpeed('high');
+                    e.preventDefault();
+                    break;
             }
         });
+    }
+
+    // ==========================================
+    // ENVIAR COMANDOS WEBSOCKET CON VELOCIDAD
+    // ==========================================
+
+    sendWSCommand(operationId) {
+        const operation = this.OPERATIONS[operationId];
+        
+        if (!operation) {
+            console.error(`Operación ${operationId} no encontrada`);
+            this.showNotification(`Operación ${operationId} no encontrada`, 'error');
+            return;
+        }
+        
+        if (!this.isWSConnected) {
+            this.showNotification('No conectado al servidor WebSocket', 'error');
+            return;
+        }
+
+        // Verificar obstáculos antes de movimientos hacia adelante
+        if ((operation.command === 'forward' || 
+             operation.command === 'curve_forward_right' || 
+             operation.command === 'curve_forward_left') && 
+            this.obstacleStatus.detected) {
+            
+            console.log('🚫 Movimiento bloqueado - Obstáculo detectado');
+            this.showNotification(`⚠️ Movimiento bloqueado - Obstáculo detectado a ${this.obstacleStatus.distance}cm`, 'warning');
+            
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                const blockedMessage = {
+                    type: 'movement_blocked',
+                    command: operation.command,
+                    reason: 'obstacle_detected',
+                    distance: this.obstacleStatus.distance,
+                    location: this.obstacleStatus.location,
+                    timestamp: new Date().toISOString()
+                };
+                this.ws.send(JSON.stringify(blockedMessage));
+            }
+            return;
+        }
+        
+        const message = {
+            command: operation.command,
+            duration: operation.duration,
+            speed: this.SPEED_VALUES[this.currentSpeed], // 🆕 Incluir velocidad actual
+            timestamp: new Date().toISOString()
+        };
+        
+        console.log(`📤 Enviando comando al servidor: ${operation.name} a velocidad ${this.currentSpeed}`);
+        console.log(`   Comando API: ${operation.command}`);
+        console.log(`   Duración: ${operation.duration}ms`);
+        console.log(`   Velocidad: ${this.SPEED_VALUES[this.currentSpeed]} PWM`);
+        
+        try {
+            this.ws.send(JSON.stringify(message));
+            this.showNotification(`Ejecutando: ${operation.name} (Velocidad: ${this.currentSpeed})`, 'info');
+            
+            this.addToCommandHistory({
+                id_dispositivo: this.currentDevice,
+                status_operacion: operationId,
+                status_texto: this.getOperationText(operationId)
+            });
+            
+            const button = document.querySelector(`[data-operation="${operationId}"]`);
+            if (button) {
+                button.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    button.style.transform = 'scale(1)';
+                }, 100);
+            }
+            
+        } catch (error) {
+            console.error('Error enviando comando WebSocket:', error);
+            this.showNotification('Error enviando comando', 'error');
+        }
     }
 
     // ==========================================
@@ -745,81 +886,6 @@ class CarControlApp {
     }
 
     // ==========================================
-    // ENVIAR COMANDOS WEBSOCKET
-    // ==========================================
-
-    sendWSCommand(operationId) {
-        const operation = this.OPERATIONS[operationId];
-        
-        if (!operation) {
-            console.error(`Operación ${operationId} no encontrada`);
-            this.showNotification(`Operación ${operationId} no encontrada`, 'error');
-            return;
-        }
-        
-        if (!this.isWSConnected) {
-            this.showNotification('No conectado al servidor WebSocket', 'error');
-            return;
-        }
-
-        // Verificar obstáculos antes de movimientos hacia adelante
-        if ((operation.command === 'forward' || 
-             operation.command === 'curve_forward_right' || 
-             operation.command === 'curve_forward_left') && 
-            this.obstacleStatus.detected) {
-            
-            console.log('🚫 Movimiento bloqueado - Obstáculo detectado');
-            this.showNotification(`⚠️ Movimiento bloqueado - Obstáculo detectado a ${this.obstacleStatus.distance}cm`, 'warning');
-            
-            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                const blockedMessage = {
-                    type: 'movement_blocked',
-                    command: operation.command,
-                    reason: 'obstacle_detected',
-                    distance: this.obstacleStatus.distance,
-                    location: this.obstacleStatus.location,
-                    timestamp: new Date().toISOString()
-                };
-                this.ws.send(JSON.stringify(blockedMessage));
-            }
-            return;
-        }
-        
-        const message = {
-            command: operation.command,
-            duration: operation.duration,
-            timestamp: new Date().toISOString()
-        };
-        
-        console.log(`📤 Enviando comando al servidor: ${operation.name}`);
-        console.log(`   Comando API: ${operation.command}`);
-        console.log(`   Duración: ${operation.duration}ms`);
-        
-        try {
-            this.ws.send(JSON.stringify(message));
-            this.showNotification(`Ejecutando: ${operation.name}`, 'info');
-            
-            this.addToCommandHistory({
-                id_dispositivo: this.currentDevice,
-                status_operacion: operationId,
-                status_texto: this.getOperationText(operationId)
-            });
-            
-            const button = document.querySelector(`[data-operation="${operationId}"]`);
-            if (button) {
-                button.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    button.style.transform = 'scale(1)';
-                }, 100);
-            }
-            
-        } catch (error) {
-            console.error('Error enviando comando WebSocket:', error);
-            this.showNotification('Error enviando comando', 'error');
-        }
-    }
-
-    // ==========================================
     // ACTUALIZACIONES DE ESTADO
     // ==========================================
 
@@ -901,7 +967,9 @@ class CarControlApp {
                 obstacle_detected: this.obstacleStatus.detected,
                 obstacle_distance: this.obstacleStatus.distance,
                 obstacle_location: this.obstacleStatus.location,
-                current_mode: this.currentMode
+                current_mode: this.currentMode,
+                current_speed: this.currentSpeed,
+                speed_pwm: this.SPEED_VALUES[this.currentSpeed]
             }
         });
     }
@@ -1877,6 +1945,10 @@ function setManualMode() {
 
 function setAutoMode() {
     if (app) app.setMode('sequence');
+}
+
+function setSpeed(speed) {
+    if (app) app.setSpeed(speed);
 }
 
 // ==========================================
