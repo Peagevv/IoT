@@ -1,12 +1,40 @@
 class CarMonitoringApp {
     constructor() {
         this.apiBaseUrl = 'http://98.91.159.217:5500';
-        this.socket = io('http://98.91.159.217:5500', {
-            transports: ['websocket'],
-            secure: false
-        });
+        
+        // ==========================================
+        // WEBSOCKET CONFIGURATION
+        // ==========================================
+        this.WS_HOST = '98.91.159.217';
+        this.WS_PORT = 5501;
+        this.WS_PATH = '/client';
+        this.WS_URL = `ws://${this.WS_HOST}:${this.WS_PORT}${this.WS_PATH}`;
+        
+        this.ws = null;
         this.isConnected = false;
         this.currentDevice = 1;
+        
+        // ==========================================
+        // ESTADO ACTUAL DEL CARRO
+        // ==========================================
+        this.currentState = {
+            lastMovement: 'Sin movimientos',
+            lastMovementTime: '',
+            lastObstacle: 'Sin obstáculos',
+            lastObstacleTime: '',
+            currentStatus: 'Desconectado',
+            statusTimestamp: ''
+        };
+        
+        // ==========================================
+        // HISTORIALES
+        // ==========================================
+        this.movementsHistory = [];
+        this.obstaclesHistory = [];
+        
+        // ==========================================
+        // ESTADÍSTICAS
+        // ==========================================
         this.stats = {
             totalMovements: 0,
             totalObstacles: 0,
@@ -16,379 +44,347 @@ class CarMonitoringApp {
             startTime: Date.now()
         };
         
-        // ==================== PROPIEDADES PARA GESTIÓN DE ESTADO ACTUAL ====================
-        this.lastMovement = null;
-        this.lastObstacle = null;
-        this.currentCarStatus = 'desconectado';
-        this.statusUpdateTime = null;
-        this.isDemoRunning = false;
-        
         this.initializeApp();
     }
 
     initializeApp() {
+        console.log('🚀 Inicializando app de monitoreo...');
+        this.hideRedundantSections();
         this.initializeEventListeners();
-        this.connectSocketIO();
+        this.connectWebSocket();
         this.loadInitialData();
         this.startUptimeCounter();
-        this.initializeStatusUpdates(); // Inicializar actualizaciones de estado
+        this.initializeStatusUpdates();
     }
 
-    // ==================== GESTIÓN DE ESTADO ACTUAL (MONITOREO) ====================
-
-    initializeStatusUpdates() {
-        // Actualizar timestamp periódicamente
-        setInterval(() => {
-            this.updateStatusTimestamp();
-        }, 1000);
-    }
-
-    // Escuchar eventos de sincronización de la app control
-    setupStatusSync() {
-        this.socket.on('monitoring_sync', (data) => {
-            if (data.type === 'status_update') {
-                this.updateStatusFromControl(data.data);
-            }
-        });
-    }
-
-    // Actualizar estado desde datos de la app control
-    updateStatusFromControl(statusData) {
-        console.log('Actualizando estado desde control:', statusData);
-        
-        // Actualizar último movimiento si está disponible
-        if (statusData.last_command) {
-            this.lastMovement = {
-                operation: statusData.last_command.status_operacion,
-                text: this.getOperationText(statusData.last_command.status_operacion),
-                device: statusData.last_command.id_dispositivo,
-                timestamp: new Date(statusData.timestamp)
-            };
+    // ==========================================
+    // ✅ OCULTAR SECCIONES REDUNDANTES
+    // ==========================================
+    hideRedundantSections() {
+        // Ocultar "Movimientos en Tiempo Real"
+        const realTimeMovements = document.querySelector('#realTimeMovements')?.closest('.col-lg-6');
+        if (realTimeMovements) {
+            realTimeMovements.style.display = 'none';
+            console.log('🗑️ Ocultando "Movimientos en Tiempo Real" (redundante)');
         }
         
-        // Actualizar último obstáculo si está disponible
-        if (statusData.last_obstacle) {
-            this.lastObstacle = {
-                type: statusData.last_obstacle.status_obstaculo,
-                text: this.getObstacleText(statusData.last_obstacle.status_obstaculo),
-                device: statusData.last_obstacle.id_dispositivo,
-                timestamp: new Date(statusData.timestamp)
-            };
-        }
-        
-        // Actualizar estado general
-        this.currentCarStatus = statusData.connection_status || 'desconectado';
-        this.isDemoRunning = statusData.is_demo_running || false;
-        this.statusUpdateTime = new Date(statusData.timestamp);
-        
-        // Actualizar estadísticas
-        if (statusData.total_commands !== undefined) {
-            this.stats.totalMovements = statusData.total_commands;
-        }
-        if (statusData.total_obstacles !== undefined) {
-            this.stats.totalObstacles = statusData.total_obstacles;
-        }
-        
-        this.renderCurrentStatus();
-        this.updateStats();
-    }
-
-    // Renderizar estado actual en la interfaz
-    renderCurrentStatus() {
-        // Actualizar último movimiento
-        const movementElement = document.getElementById('lastMovement');
-        const movementTimeElement = document.getElementById('lastMovementTime');
-        
-        if (this.lastMovement) {
-            movementElement.innerHTML = `<span class="text-success fw-bold">${this.lastMovement.text}</span>`;
-            movementTimeElement.textContent = `Hora: ${this.lastMovement.timestamp.toLocaleTimeString()}`;
-        } else {
-            movementElement.innerHTML = '<span class="text-muted">Sin movimientos</span>';
-            movementTimeElement.textContent = '';
-        }
-
-        // Actualizar último obstáculo
-        const obstacleElement = document.getElementById('lastObstacle');
-        const obstacleTimeElement = document.getElementById('lastObstacleTime');
-        
-        if (this.lastObstacle) {
-            obstacleElement.innerHTML = `<span class="text-warning fw-bold">${this.lastObstacle.text}</span>`;
-            obstacleTimeElement.textContent = `Hora: ${this.lastObstacle.timestamp.toLocaleTimeString()}`;
-        } else {
-            obstacleElement.innerHTML = '<span class="text-muted">Sin obstáculos</span>';
-            obstacleTimeElement.textContent = '';
-        }
-
-        // Actualizar estado actual
-        const statusElement = document.getElementById('currentStatus');
-        let statusBadge = '';
-        
-        if (this.currentCarStatus === 'connected') {
-            statusBadge = this.isDemoRunning ? 
-                '<span class="badge bg-warning">Demo en Ejecución</span>' :
-                '<span class="badge bg-success">Conectado</span>';
-        } else if (this.currentCarStatus === 'disconnected') {
-            statusBadge = '<span class="badge bg-secondary">Desconectado</span>';
-        } else {
-            statusBadge = '<span class="badge bg-danger">Error</span>';
-        }
-        
-        statusElement.innerHTML = statusBadge;
-    }
-
-    updateStatusTimestamp() {
-        const timestampElement = document.getElementById('statusTimestamp');
-        if (timestampElement) {
-            timestampElement.textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+        // Ocultar "Obstáculos Detectados"
+        const realTimeObstacles = document.querySelector('#realTimeObstacles')?.closest('.col-lg-6');
+        if (realTimeObstacles) {
+            realTimeObstacles.style.display = 'none';
+            console.log('🗑️ Ocultando "Obstáculos Detectados" (redundante)');
         }
     }
 
-    // Actualizar último movimiento desde eventos de comando
-    updateLastMovement(commandData) {
-        this.lastMovement = {
-            operation: commandData.status_operacion,
-            text: this.getOperationText(commandData.status_operacion),
-            device: commandData.id_dispositivo,
-            timestamp: new Date()
-        };
-        this.renderCurrentStatus();
-    }
-
-    // Actualizar último obstáculo desde eventos de obstáculo
-    updateLastObstacle(obstacleData) {
-        this.lastObstacle = {
-            type: obstacleData.status_obstaculo,
-            text: this.getObstacleText(obstacleData.status_obstaculo),
-            device: obstacleData.id_dispositivo,
-            timestamp: new Date()
-        };
-        this.renderCurrentStatus();
-    }
-
-    connectSocketIO() {
-        if (this.isConnected) {
-            this.showNotification('Ya estás conectado al servidor', 'info');
-            return;
-        }
-
+    // ==========================================
+    // WEBSOCKET CONNECTION
+    // ==========================================
+    connectWebSocket() {
+        console.log('🔌 Conectando a WebSocket...', this.WS_URL);
+        
         try {
-            this.updateConnectionStatus('Conectando...', 'warning');
+            this.ws = new WebSocket(this.WS_URL);
             
-            this.socket = io(this.apiBaseUrl, {
-                transports: ['websocket', 'polling'],
-                reconnection: true,
-                reconnectionDelay: 1000
-            });
-
-            this.socket.on('connect', () => {
+            this.ws.onopen = () => {
+                console.log('✅ WebSocket conectado');
                 this.isConnected = true;
                 this.stats.connections++;
                 this.updateConnectionStatus('Conectado ✅', 'success');
-                this.addRealTimeMessage('🔗 Sistema de monitoreo conectado', 'system');
-                this.showNotification('Socket.IO conectado exitosamente', 'success');
+                this.updateCurrentStatus('Conectado - Carro Principal');
+                this.showNotification('WebSocket conectado exitosamente', 'success');
                 
-                // Actualizar estado del carro
-                this.currentCarStatus = 'connected';
-                this.renderCurrentStatus();
-                
-                // Suscribirse al dispositivo actual
-                this.socket.emit('subscribe_device', { device_id: this.currentDevice });
-                
-                // Configurar sincronización de estado
-                this.setupStatusSync();
-            });
-
-            this.socket.on('disconnect', () => {
+                // Cargar datos iniciales
+                setTimeout(() => this.loadInitialData(), 500);
+            };
+            
+            this.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('📨 WebSocket:', data);
+                    this.stats.wsMessages++;
+                    this.updateStats();
+                    
+                    this.handleWebSocketMessage(data);
+                    
+                } catch (e) {
+                    console.error('❌ Error procesando mensaje:', e);
+                }
+            };
+            
+            this.ws.onerror = (error) => {
+                console.error('❌ WebSocket error:', error);
+                this.isConnected = false;
+                this.updateConnectionStatus('Error ❌', 'danger');
+                this.updateCurrentStatus('Error de conexión');
+            };
+            
+            this.ws.onclose = (event) => {
+                console.log('🔌 WebSocket desconectado');
                 this.isConnected = false;
                 this.updateConnectionStatus('Desconectado', 'secondary');
-                this.addRealTimeMessage('🔌 Desconectado del servidor', 'system');
+                this.updateCurrentStatus('Desconectado');
                 
-                // Actualizar estado del carro
-                this.currentCarStatus = 'disconnected';
-                this.renderCurrentStatus();
-            });
-
-            this.socket.on('connect_error', (error) => {
-                this.updateConnectionStatus('Error ❌', 'danger');
-                this.addRealTimeMessage('❌ Error en la conexión', 'system');
-                console.error('Socket.IO error:', error);
-                
-                // Actualizar estado del carro
-                this.currentCarStatus = 'error';
-                this.renderCurrentStatus();
-            });
-
-            // ==================== ESCUCHAR EVENTOS DEL APP CONTROL ====================
+                // Reconectar después de 5 segundos
+                setTimeout(() => {
+                    console.log('🔄 Intentando reconectar...');
+                    this.connectWebSocket();
+                }, 5000);
+            };
             
-            // Comandos del carro
-            this.socket.on('command_update', (data) => {
-                this.stats.wsMessages++;
-                this.updateStats();
-                
-                if (data.type === 'new_command') {
-                    this.handleCommandUpdate(data.data);
-                    this.updateLastMovement(data.data); // Actualizar último movimiento
-                }
-            });
-
-            // Obstáculos
-            this.socket.on('obstacle_update', (data) => {
-                this.stats.wsMessages++;
-                this.updateStats();
-                
-                if (data.type === 'new_obstacle' || data.type === 'manual_obstacle_created') {
-                    this.handleObstacleUpdate(data.data);
-                    this.updateLastObstacle(data.data); // Actualizar último obstáculo
-                }
-            });
-
-            // Secuencias
-            this.socket.on('sequence_update', (data) => {
-                this.stats.wsMessages++;
-                this.updateStats();
-                
-                if (data.type === 'sequence_created' || data.type === 'sequence_updated') {
-                    this.handleSequenceUpdate(data.data);
-                }
-            });
-
-            // Ejecuciones
-            this.socket.on('execution_update', (data) => {
-                this.stats.wsMessages++;
-                this.updateStats();
-                
-                if (data.type === 'execution_started') {
-                    this.handleExecutionUpdate(data.data);
-                    this.isDemoRunning = true;
-                    this.renderCurrentStatus();
-                }
-                
-                if (data.type === 'execution_finished') {
-                    this.isDemoRunning = false;
-                    this.renderCurrentStatus();
-                }
-            });
-
-            // Sincronización de estado con app control
-            this.socket.on('monitoring_sync', (data) => {
-                if (data.type === 'status_update') {
-                    this.updateStatusFromControl(data.data);
-                }
-            });
-
-            // Respuestas del servidor
-            this.socket.on('connection_response', (data) => {
-                this.addRealTimeMessage(`📡 ${data.message}`, 'system');
-            });
-
-            this.socket.on('subscription_response', (data) => {
-                this.addRealTimeMessage(`✅ ${data.message}`, 'system');
-            });
-
         } catch (error) {
-            console.error('Socket.IO connection error:', error);
-            this.showNotification('Error al conectar Socket.IO', 'danger');
+            console.error('❌ Error creando WebSocket:', error);
+            this.isConnected = false;
+            this.updateConnectionStatus('Error ❌', 'danger');
         }
     }
 
-    // ==================== MANEJAR EVENTOS ESPECÍFICOS ====================
-
-    handleCommandUpdate(commandData) {
-        const operationText = this.getOperationText(commandData.status_operacion);
-        const deviceName = this.getDeviceName(commandData.id_dispositivo);
+    // ==========================================
+    // ✅ MANEJO DE MENSAJES WEBSOCKET - CORREGIDO
+    // ==========================================
+    handleWebSocketMessage(data) {
+        const type = data.type || data.event;
         
-        this.addRealTimeMovement(
-            `🚗 ${deviceName} - ${operationText}`,
-            commandData.status_operacion
-        );
-        
-        // Actualizar estadísticas
-        this.stats.totalMovements++;
-        this.updateStats();
-        
-        // Recargar historial después de un breve delay
-        setTimeout(() => this.loadMovementsHistory(), 500);
-    }
-
-    handleObstacleUpdate(obstacleData) {
-        const deviceName = this.getDeviceName(obstacleData.id_dispositivo);
-        const obstacleText = this.getObstacleText(obstacleData.status_obstaculo);
-        
-        this.addRealTimeObstacle(
-            `⚠️ ${deviceName} - ${obstacleText}`,
-            obstacleData.status_obstaculo
-        );
-        
-        // Actualizar estadísticas
-        this.stats.totalObstacles++;
-        this.updateStats();
-        
-        // Recargar historial después de un breve delay
-        setTimeout(() => this.loadObstaclesHistory(), 500);
-    }
-
-    handleSequenceUpdate(sequenceData) {
-        this.addRealTimeMessage(
-            `📋 Secuencia "${sequenceData.nombre_secuencia}" actualizada`,
-            'system'
-        );
-    }
-
-    handleExecutionUpdate(executionData) {
-        this.addRealTimeMessage(
-            `🎬 Ejecutando secuencia: ${executionData.id_secuencia}`,
-            'system'
-        );
-    }
-
-    // ==================== ACTUALIZAR EVENT LISTENER PARA CAMBIAR DISPOSITIVO ====================
-
-    initializeEventListeners() {
-        document.getElementById('connectBtn').addEventListener('click', () => {
-            this.connectSocketIO();
-        });
-
-        document.getElementById('refreshBtn').addEventListener('click', () => {
-            this.loadMovementsHistory();
-            this.loadObstaclesHistory();
-            this.showNotification('Datos actualizados', 'info');
-        });
-
-        document.getElementById('clearBtn').addEventListener('click', () => {
-            this.clearRealTimeData();
-        });
-
-        document.getElementById('deviceSelect').addEventListener('change', (e) => {
-            const oldDevice = this.currentDevice;
-            this.currentDevice = parseInt(e.target.value);
+        // ========== COMANDO EJECUTADO ==========
+        if (type === 'command_executed') {
+            console.log('🚗 Comando ejecutado:', data);
             
-            // Cambiar suscripción en WebSocket
-            if (this.socket && this.socket.connected) {
-                this.socket.emit('unsubscribe_device', { device_id: oldDevice });
-                this.socket.emit('subscribe_device', { device_id: this.currentDevice });
+            const operationText = this.getOperationText(data.operation || data.command);
+            const deviceName = `Dispositivo ${data.device_id || this.currentDevice}`;
+            
+            // Actualizar estado actual
+            this.updateCurrentMovement(operationText);
+            
+            // Agregar al historial
+            this.movementsHistory.unshift({
+                id_evento: Date.now(),
+                fecha_hora: new Date().toISOString(),
+                status_texto: operationText,
+                nombre_dispositivo: deviceName,
+                id_dispositivo: data.device_id || this.currentDevice,
+                status_operacion: data.operation
+            });
+            
+            // Mantener solo últimos 20
+            if (this.movementsHistory.length > 20) {
+                this.movementsHistory = this.movementsHistory.slice(0, 20);
             }
             
-            this.loadMovementsHistory();
-            this.loadObstaclesHistory();
-            this.showNotification(`Cambiado a: ${e.target.options[e.target.selectedIndex].text}`, 'info');
+            this.stats.totalMovements++;
+            this.updateStats();
+            this.renderMovementsHistory();
+        }
+        
+        // ========== OBSTÁCULO DETECTADO ==========
+        else if (type === 'obstacle_detected') {
+            console.log('🛑 Obstáculo detectado:', data);
             
-            // Resetear estado al cambiar dispositivo
-            this.lastMovement = null;
-            this.lastObstacle = null;
-            this.renderCurrentStatus();
-        });
-
-        document.getElementById('autoRefresh').addEventListener('change', (e) => {
-            this.toggleAutoRefresh(e.target.checked);
-        });
+            const obstacleText = `Obstáculo a ${data.distance || 0}cm`;
+            const deviceName = `Dispositivo ${data.device_id || this.currentDevice}`;
+            
+            // Actualizar estado actual
+            this.updateCurrentObstacle(obstacleText);
+            
+            // Agregar al historial
+            this.obstaclesHistory.unshift({
+                id_evento: Date.now(),
+                fecha_hora: new Date().toISOString(),
+                status_texto: obstacleText,
+                nombre_dispositivo: deviceName,
+                id_dispositivo: data.device_id || this.currentDevice,
+                ubicacion: data.location || 'front',
+                distancia_detectada: data.distance || 0,
+                automatico: true
+            });
+            
+            // Mantener solo últimos 20
+            if (this.obstaclesHistory.length > 20) {
+                this.obstaclesHistory = this.obstaclesHistory.slice(0, 20);
+            }
+            
+            this.stats.totalObstacles++;
+            this.updateStats();
+            this.renderObstaclesHistory();
+        }
+        
+        // ========== HEARTBEAT ==========
+        else if (type === 'car_heartbeat') {
+            // Solo actualizar estado si es necesario
+            if (data.battery) {
+                // Podrías mostrar batería si quisieras
+            }
+        }
+        
+        // ========== ESTADO DEL CARRO ==========
+        else if (type === 'car_status') {
+            if (data.status === 'connected') {
+                this.updateCurrentStatus('Conectado - Carro Principal');
+            } else {
+                this.updateCurrentStatus('Desconectado');
+            }
+        }
     }
 
+    // ==========================================
+    // ✅ ACTUALIZAR ESTADO ACTUAL - CORREGIDO
+    // ==========================================
+    updateCurrentMovement(operationText) {
+        this.currentState.lastMovement = operationText;
+        this.currentState.lastMovementTime = new Date().toLocaleTimeString();
+        this.renderCurrentStatus();
+    }
+
+    updateCurrentObstacle(obstacleText) {
+        this.currentState.lastObstacle = obstacleText;
+        this.currentState.lastObstacleTime = new Date().toLocaleTimeString();
+        this.renderCurrentStatus();
+    }
+
+    updateCurrentStatus(status) {
+        this.currentState.currentStatus = status;
+        this.currentState.statusTimestamp = new Date().toLocaleTimeString();
+        this.renderCurrentStatus();
+    }
+
+    // ==========================================
+    // ✅ RENDERIZAR ESTADO ACTUAL - CORREGIDO
+    // ==========================================
+    renderCurrentStatus() {
+        // Último movimiento
+        const movementElement = document.getElementById('lastMovement');
+        const movementTimeElement = document.getElementById('lastMovementTime');
+        
+        if (movementElement && movementTimeElement) {
+            movementElement.innerHTML = `<span class="text-success fw-bold">${this.currentState.lastMovement}</span>`;
+            movementTimeElement.textContent = `Hora: ${this.currentState.lastMovementTime}`;
+        }
+
+        // Último obstáculo
+        const obstacleElement = document.getElementById('lastObstacle');
+        const obstacleTimeElement = document.getElementById('lastObstacleTime');
+        
+        if (obstacleElement && obstacleTimeElement) {
+            obstacleElement.innerHTML = `<span class="text-warning fw-bold">${this.currentState.lastObstacle}</span>`;
+            obstacleTimeElement.textContent = `Hora: ${this.currentState.lastObstacleTime}`;
+        }
+
+        // Estado actual
+        const statusElement = document.getElementById('currentStatus');
+        const statusTimeElement = document.getElementById('statusTimestamp');
+        
+        if (statusElement && statusTimeElement) {
+            const statusBadge = this.isConnected ? 
+                '<span class="badge bg-success">Conectado</span>' :
+                '<span class="badge bg-secondary">Desconectado</span>';
+            
+            statusElement.innerHTML = statusBadge;
+            statusTimeElement.textContent = `Actualizado: ${this.currentState.statusTimestamp}`;
+        }
+    }
+
+    // ==========================================
+    // ✅ RENDERIZAR HISTORIAL DE MOVIMIENTOS - CORREGIDO
+    // ==========================================
+    renderMovementsHistory() {
+        const container = document.getElementById('movementsHistory');
+        
+        if (!container) {
+            console.log('❌ No se encontró movementsHistory');
+            return;
+        }
+        
+        if (!this.movementsHistory || this.movementsHistory.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-inbox display-6"></i>
+                    <p class="mt-2">No hay movimientos registrados</p>
+                </div>
+            `;
+            return;
+        }
+
+        console.log('📊 Renderizando movimientos:', this.movementsHistory.length);
+
+        let html = '';
+        this.movementsHistory.forEach(movement => {
+            const date = new Date(movement.fecha_hora).toLocaleString();
+            const operationClass = this.getMovementClass(movement.status_operacion);
+            
+            html += `
+                <div class="message-item ${operationClass} fade-in">
+                    <div class="message-header">
+                        <span class="message-time">${date}</span>
+                        <span class="message-type movement">
+                            ${movement.status_texto}
+                        </span>
+                    </div>
+                    <p class="message-content mb-0">
+                        <strong>${movement.nombre_dispositivo}</strong><br>
+                        ${movement.status_texto}
+                    </p>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // ==========================================
+    // ✅ RENDERIZAR HISTORIAL DE OBSTÁCULOS - CORREGIDO
+    // ==========================================
+    renderObstaclesHistory() {
+        const container = document.getElementById('obstaclesHistory');
+        
+        if (!container) {
+            console.log('❌ No se encontró obstaclesHistory');
+            return;
+        }
+        
+        if (!this.obstaclesHistory || this.obstaclesHistory.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-shield-check display-6"></i>
+                    <p class="mt-2">No hay obstáculos detectados</p>
+                </div>
+            `;
+            return;
+        }
+
+        console.log('📊 Renderizando obstáculos:', this.obstaclesHistory.length);
+
+        let html = '';
+        this.obstaclesHistory.forEach(obstacle => {
+            const date = new Date(obstacle.fecha_hora).toLocaleString();
+            const distancia = obstacle.distancia_detectada || 'N/A';
+            
+            html += `
+                <div class="message-item obstacle fade-in">
+                    <div class="message-header">
+                        <span class="message-time">${date}</span>
+                        <span class="message-type obstacle">
+                            🛑 OBSTÁCULO
+                        </span>
+                    </div>
+                    <p class="message-content mb-0">
+                        <strong>${obstacle.nombre_dispositivo}</strong><br>
+                        ${obstacle.status_texto}
+                        ${distancia !== 'N/A' ? `<br><small class="text-muted">Distancia: ${distancia} cm</small>` : ''}
+                    </p>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // ==========================================
+    // CARGAR DATOS HTTP INICIALES
+    // ==========================================
     async loadInitialData() {
+        console.log('📡 Cargando datos iniciales...');
         await this.checkApiStatus();
-        await this.loadMovementsHistory();
-        await this.loadObstaclesHistory();
+        await this.loadMovementsFromAPI();
+        await this.loadObstaclesFromAPI();
         await this.loadStats();
-        this.renderCurrentStatus(); // Renderizar estado inicial
     }
 
     async checkApiStatus() {
@@ -409,35 +405,47 @@ class CarMonitoringApp {
         }
     }
 
-    async loadMovementsHistory() {
+    async loadMovementsFromAPI() {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/api/commands?device_id=${this.currentDevice}&limit=15`);
+            const response = await fetch(`${this.apiBaseUrl}/api/commands?device_id=${this.currentDevice}&limit=20`);
             const data = await response.json();
             
-            if (data.status === 'success') {
-                this.displayMovementsHistory(data.data);
+            if (data.status === 'success' && data.data) {
+                this.movementsHistory = data.data;
                 this.stats.totalMovements = data.data.length;
                 this.updateStats();
+                this.renderMovementsHistory();
+                
+                // Actualizar último movimiento si existe
+                if (data.data.length > 0) {
+                    const latest = data.data[0];
+                    this.updateCurrentMovement(latest.status_texto);
+                }
             }
         } catch (error) {
-            console.error('Error loading movements:', error);
-            this.addRealTimeMessage('❌ Error al cargar movimientos', 'system');
+            console.error('❌ Error cargando movimientos:', error);
         }
     }
 
-    async loadObstaclesHistory() {
+    async loadObstaclesFromAPI() {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/api/obstacles?device_id=${this.currentDevice}&limit=10`);
+            const response = await fetch(`${this.apiBaseUrl}/api/obstacles?device_id=${this.currentDevice}&limit=20`);
             const data = await response.json();
             
-            if (data.status === 'success') {
-                this.displayObstaclesHistory(data.data);
+            if (data.status === 'success' && data.data) {
+                this.obstaclesHistory = data.data;
                 this.stats.totalObstacles = data.data.length;
                 this.updateStats();
+                this.renderObstaclesHistory();
+                
+                // Actualizar último obstáculo si existe
+                if (data.data.length > 0) {
+                    const latest = data.data[0];
+                    this.updateCurrentObstacle(latest.status_texto);
+                }
             }
         } catch (error) {
-            console.error('Error loading obstacles:', error);
-            this.addRealTimeMessage('❌ Error al cargar obstáculos', 'system');
+            console.error('❌ Error cargando obstáculos:', error);
         }
     }
 
@@ -459,198 +467,39 @@ class CarMonitoringApp {
             
             this.updateStats();
         } catch (error) {
-            console.error('Error loading stats:', error);
+            console.error('❌ Error cargando estadísticas:', error);
         }
     }
 
-    displayMovementsHistory(movements) {
-        const container = document.getElementById('movementsHistory');
-        
-        if (!movements || movements.length === 0) {
-            container.innerHTML = `
-                <div class="text-center text-muted py-4">
-                    <i class="bi bi-inbox display-6"></i>
-                    <p class="mt-2">No hay movimientos registrados</p>
-                </div>
-            `;
-            return;
-        }
-
-        let html = '';
-        movements.forEach(movement => {
-            const date = new Date(movement.fecha_hora).toLocaleString();
-            html += `
-                <div class="message-item movement fade-in">
-                    <div class="message-header">
-                        <span class="message-time">${date}</span>
-                        <span class="message-type ${this.getMovementTypeClass(movement.status_operacion)}">
-                            ${movement.status_texto}
-                        </span>
-                    </div>
-                    <p class="message-content">
-                        <strong>${movement.nombre_dispositivo}</strong><br>
-                        ${movement.status_texto}
-                    </p>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-    }
-
-    displayObstaclesHistory(obstacles) {
-        const container = document.getElementById('obstaclesHistory');
-        
-        if (!obstacles || obstacles.length === 0) {
-            container.innerHTML = `
-                <div class="text-center text-muted py-4">
-                    <i class="bi bi-shield-check display-6"></i>
-                    <p class="mt-2">No hay obstáculos detectados</p>
-                </div>
-            `;
-            return;
-        }
-
-        let html = '';
-        obstacles.forEach(obstacle => {
-            const date = new Date(obstacle.fecha_hora).toLocaleString();
-            html += `
-                <div class="message-item obstacle fade-in">
-                    <div class="message-header">
-                        <span class="message-time">${date}</span>
-                        <span class="message-type ${this.getObstacleTypeClass(obstacle.status_obstaculo)}">
-                            ${obstacle.status_texto}
-                        </span>
-                    </div>
-                    <p class="message-content">
-                        <strong>${obstacle.nombre_dispositivo}</strong><br>
-                        Obstáculo: ${obstacle.status_texto}
-                    </p>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-    }
-
-    getMovementTypeClass(operation) {
-        if ([1, 2].includes(operation)) return 'movement'; // Movimiento básico
-        if (operation === 3) return 'system'; // Detener
-        if ([8, 9, 10, 11].includes(operation)) return 'movement'; // Giros
-        return 'system'; // Otros
-    }
-
-    getObstacleTypeClass(obstacle) {
-        if ([1, 2, 3].includes(obstacle)) return 'obstacle'; // Obstáculos normales
-        if ([4, 5].includes(obstacle)) return 'emergency'; // Obstáculos críticos
-        return 'obstacle';
-    }
-
+    // ==========================================
+    // HELPERS
+    // ==========================================
     getOperationText(operation) {
         const operations = {
-            1: 'Adelante', 2: 'Atrás', 3: 'Detener',
-            4: 'Vuelta adelante derecha', 5: 'Vuelta adelante izquierda',
-            6: 'Vuelta atrás derecha', 7: 'Vuelta atrás izquierda',
-            8: 'Giro 90° derecha', 9: 'Giro 90° izquierda',
-            10: 'Giro 360° derecha', 11: 'Giro 360° izquierda'
+            1: '🚗 Adelante',
+            2: '🚗 Atrás',
+            3: '🛑 Detener',
+            4: '↗️ Vuelta Adelante Der.',
+            5: '↖️ Vuelta Adelante Izq.',
+            6: '↘️ Vuelta Atrás Der.',
+            7: '↙️ Vuelta Atrás Izq.',
+            8: '↷ Giro 90° Derecha',
+            9: '↶ Giro 90° Izquierda',
+            10: '⟳ Giro 360° Derecha',
+            11: '⟲ Giro 360° Izquierda',
+            'forward': '🚗 Adelante',
+            'backward': '🚗 Atrás',
+            'stop': '🛑 Detener',
+            'turn_right': '↷ Giro 90° Derecha',
+            'turn_left': '↶ Giro 90° Izquierda'
         };
         return operations[operation] || `Operación ${operation}`;
     }
 
-    getObstacleText(obstacle) {
-        const obstacles = {
-            1: 'Obstáculo adelante',
-            2: 'Obstáculo adelante-izquierda', 
-            3: 'Obstáculo adelante-derecha',
-            4: 'Obstáculo múltiple',
-            5: 'Retroceder - Obstáculo crítico'
-        };
-        return obstacles[obstacle] || `Obstáculo ${obstacle}`;
-    }
-
-    getDeviceName(deviceId) {
-        const select = document.getElementById('deviceSelect');
-        const option = select.querySelector(`option[value="${deviceId}"]`);
-        return option ? option.textContent : `Dispositivo ${deviceId}`;
-    }
-
-    addRealTimeMovement(message, operation) {
-        const container = document.getElementById('realTimeMovements');
-        this.addRealTimeMessageToContainer(message, 'movement', operation, container);
-    }
-
-    addRealTimeObstacle(message, obstacle) {
-        const container = document.getElementById('realTimeObstacles');
-        const type = [4, 5].includes(obstacle) ? 'emergency' : 'obstacle';
-        this.addRealTimeMessageToContainer(message, type, obstacle, container);
-    }
-
-    addRealTimeMessage(message, type) {
-        // Para mensajes del sistema, mostrarlos en ambos contenedores
-        if (type === 'system') {
-            this.addRealTimeMessageToContainer(message, 'system', null, document.getElementById('realTimeMovements'));
-            this.addRealTimeMessageToContainer(message, 'system', null, document.getElementById('realTimeObstacles'));
-        }
-    }
-
-    addRealTimeMessageToContainer(message, type, data, container) {
-        // Si es el primer mensaje, limpiar el placeholder
-        if (container.children.length === 1 && container.children[0].classList.contains('text-center')) {
-            container.innerHTML = '';
-        }
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message-item ${type} fade-in`;
-        
-        const typeClass = this.getMessageTypeClass(type);
-        const typeText = type.toUpperCase();
-        
-        messageDiv.innerHTML = `
-            <div class="message-header">
-                <span class="message-time">${new Date().toLocaleTimeString()}</span>
-                <span class="message-type ${typeClass}">
-                    ${typeText}
-                </span>
-            </div>
-            <p class="message-content">${message}</p>
-        `;
-        
-        container.appendChild(messageDiv);
-        container.scrollTop = container.scrollHeight;
-
-        // Limitar a 50 mensajes
-        if (container.children.length > 50) {
-            container.removeChild(container.firstChild);
-        }
-    }
-
-    getMessageTypeClass(type) {
-        const classes = {
-            'movement': 'movement',
-            'obstacle': 'obstacle',
-            'emergency': 'emergency',
-            'system': 'system'
-        };
-        return classes[type] || 'system';
-    }
-
-    clearRealTimeData() {
-        const containers = [
-            'realTimeMovements',
-            'realTimeObstacles'
-        ];
-        
-        containers.forEach(containerId => {
-            const container = document.getElementById(containerId);
-            container.innerHTML = `
-                <div class="text-center text-muted py-5">
-                    <i class="bi bi-trash display-4"></i>
-                    <p class="mt-3">Log limpiado</p>
-                </div>
-            `;
-        });
-        
-        this.showNotification('Logs de tiempo real limpiados', 'info');
+    getMovementClass(operation) {
+        if ([1, 2, 'forward', 'backward'].includes(operation)) return 'movement';
+        if ([3, 'stop'].includes(operation)) return 'system';
+        return 'movement';
     }
 
     updateConnectionStatus(text, type) {
@@ -662,40 +511,40 @@ class CarMonitoringApp {
             'secondary': 'bg-secondary'
         }[type] || 'bg-secondary';
         
-        element.innerHTML = `<span class="badge ${badgeClass}">${text}</span>`;
+        if (element) {
+            element.innerHTML = `<span class="badge ${badgeClass}">${text}</span>`;
+        }
     }
 
     updateStats() {
-        document.getElementById('totalMovements').textContent = this.stats.totalMovements;
-        document.getElementById('totalObstacles').textContent = this.stats.totalObstacles;
+        const elements = {
+            'totalMovements': this.stats.totalMovements,
+            'totalObstacles': this.stats.totalObstacles,
+            'statsTotalMovements': this.stats.totalMovements,
+            'statsTotalObstacles': this.stats.totalObstacles,
+            'statsActiveDevices': this.stats.activeDevices,
+            'statsWsMessages': this.stats.wsMessages,
+            'statsConnections': this.stats.connections
+        };
         
-        document.getElementById('statsTotalMovements').textContent = this.stats.totalMovements;
-        document.getElementById('statsTotalObstacles').textContent = this.stats.totalObstacles;
-        document.getElementById('statsActiveDevices').textContent = this.stats.activeDevices;
-        document.getElementById('statsWsMessages').textContent = this.stats.wsMessages;
-        document.getElementById('statsConnections').textContent = this.stats.connections;
+        Object.entries(elements).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        });
     }
 
     startUptimeCounter() {
         setInterval(() => {
             const uptime = Math.floor((Date.now() - this.stats.startTime) / 1000);
-            document.getElementById('statsUptime').textContent = `${uptime}s`;
+            const el = document.getElementById('statsUptime');
+            if (el) el.textContent = `${uptime}s`;
         }, 1000);
     }
 
-    toggleAutoRefresh(enabled) {
-        if (enabled) {
-            this.autoRefreshInterval = setInterval(() => {
-                if (this.isConnected) {
-                    this.loadMovementsHistory();
-                    this.loadObstaclesHistory();
-                }
-            }, 10000); // Actualizar cada 10 segundos
-        } else {
-            if (this.autoRefreshInterval) {
-                clearInterval(this.autoRefreshInterval);
-            }
-        }
+    initializeStatusUpdates() {
+        setInterval(() => {
+            this.renderCurrentStatus();
+        }, 1000);
     }
 
     showNotification(message, type) {
@@ -722,9 +571,70 @@ class CarMonitoringApp {
             }
         }, 3000);
     }
+
+    // ==========================================
+    // EVENT LISTENERS
+    // ==========================================
+    initializeEventListeners() {
+        const connectBtn = document.getElementById('connectBtn');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', () => {
+                this.connectWebSocket();
+            });
+        }
+
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.loadMovementsFromAPI();
+                this.loadObstaclesFromAPI();
+                this.showNotification('Datos actualizados', 'info');
+            });
+        }
+
+        const clearBtn = document.getElementById('clearBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                this.movementsHistory = [];
+                this.obstaclesHistory = [];
+                this.renderMovementsHistory();
+                this.renderObstaclesHistory();
+                this.showNotification('Logs limpiados', 'info');
+            });
+        }
+
+        const deviceSelect = document.getElementById('deviceSelect');
+        if (deviceSelect) {
+            deviceSelect.addEventListener('change', (e) => {
+                this.currentDevice = parseInt(e.target.value);
+                this.loadMovementsFromAPI();
+                this.loadObstaclesFromAPI();
+                this.showNotification(`Cambiado a: ${e.target.options[e.target.selectedIndex].text}`, 'info');
+            });
+        }
+
+        const autoRefresh = document.getElementById('autoRefresh');
+        if (autoRefresh) {
+            autoRefresh.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.autoRefreshInterval = setInterval(() => {
+                        if (this.isConnected) {
+                            this.loadMovementsFromAPI();
+                            this.loadObstaclesFromAPI();
+                        }
+                    }, 10000);
+                } else {
+                    if (this.autoRefreshInterval) {
+                        clearInterval(this.autoRefreshInterval);
+                    }
+                }
+            });
+        }
+    }
 }
 
-// Inicializar aplicación cuando el DOM esté listo
+// Inicializar aplicación
 document.addEventListener('DOMContentLoaded', () => {
-    new CarMonitoringApp();
+    window.monitoringApp = new CarMonitoringApp();
+    console.log('✅ App de monitoreo inicializada');
 });
