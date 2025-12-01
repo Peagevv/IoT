@@ -1,36 +1,67 @@
-/* Estilos Morados Premium para Monitoreo Carro IoT */
+/* 🌸✨ Estilos Femeninos Pastel para Monitoreo Carro IoT ✨🌸 */
+
 :root {
-    --deep-purple: #6A0DAD;
-    --electric-purple: #8A2BE2;
-    --violet: #9400D3;
-    --lavender: #E6E6FA;
-    --amethyst: #9966CC;
-    --plum: #DDA0DD;
-    --orchid: #DA70D6;
-    --magenta: #FF00FF;
-    --gradient-primary: linear-gradient(135deg, #6A0DAD 0%, #8A2BE2 100%);
-    --gradient-secondary: linear-gradient(135deg, #9400D3 0%, #BA55D3 100%);
-    --gradient-dark: linear-gradient(135deg, #4B0082 0%, #6A0DAD 100%);
-    --gradient-success: linear-gradient(135deg, #9C27B0 0%, #E91E63 100%);
-    --gradient-warning: linear-gradient(135deg, #673AB7 0%, #2196F3 100%);
-    --gradient-danger: linear-gradient(135deg, #E91E63 0%, #F44336 100%);
-    --gradient-info: linear-gradient(135deg, #5D3FD3 0%, #8A2BE2 100%);
-    --gradient-movement: linear-gradient(135deg, #7E57C2 0%, #5C6BC0 100%);
-    --gradient-obstacle: linear-gradient(135deg, #AB47BC 0%, #EC407A 100%);
-    --gradient-system: linear-gradient(135deg, #26A69A 0%, #66BB6A 100%);
+    /* Colores Pastel Base */
+    --rosa-suave: #FFB6C1;
+    --rosa-pastel: #FFC0CB;
+    --lavanda-pastel: #E6E6FA;
+    --lila-suave: #DDA0DD;
+    --azul-bebe: #B0E0E6;
+    --menta-pastel: #C1E1C1;
+    --durazno-pastel: #FFDAB9;
+    --amarillo-pastel: #FFFACD;
+    --crema: #FFF8DC;
+    --blanco-perlado: #FFFAF0;
+    
+    /* Gradientes Mágicos */
+    --gradient-primary: linear-gradient(135deg, #FFB6C1 0%, #FFC0CB 50%, #E6E6FA 100%);
+    --gradient-secondary: linear-gradient(135deg, #DDA0DD 0%, #E6E6FA 50%, #B0E0E6 100%);
+    --gradient-magical: linear-gradient(135deg, #FFB6C1 0%, #DDA0DD 25%, #E6E6FA 50%, #B0E0E6 75%, #C1E1C1 100%);
+    --gradient-sunset: linear-gradient(135deg, #FFDAB9 0%, #FFB6C1 50%, #DDA0DD 100%);
+    --gradient-ocean: linear-gradient(135deg, #B0E0E6 0%, #E6E6FA 50%, #DDA0DD 100%);
+    --gradient-candy: linear-gradient(135deg, #FFC0CB 0%, #FFB6C1 50%, #FFDAB9 100%);
+    --gradient-dream: linear-gradient(135deg, #FFFACD 0%, #FFB6C1 50%, #E6E6FA 100%);
+    
+    /* Sombras Suaves */
+    --shadow-soft: 0 8px 32px rgba(255, 182, 193, 0.3);
+    --shadow-dreamy: 0 15px 45px rgba(221, 160, 221, 0.4);
+    --shadow-glow: 0 0 30px rgba(255, 192, 203, 0.5);
 }
 
-/* Estilos base */
+/* 🌟 Estilos Base con Magia 🌟 */
 body {
-    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    background: linear-gradient(135deg, #FFF0F5 0%, #FFE4E1 25%, #F0E6FA 50%, #E0F4FF 75%, #F0FFF0 100%);
     min-height: 100vh;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #E6E6FA;
+    font-family: 'Segoe UI', 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
+    color: #8B6B8B;
     overflow-x: hidden;
+    position: relative;
 }
 
-/* Efecto de partículas de fondo */
+/* ✨ Efecto de Estrellas y Corazones de Fondo ✨ */
 body::before {
+    content: '✨💖✨🌟💫💕⭐💗✨💖🌟💫💕⭐💗✨💖🌟💫💕';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    font-size: 3rem;
+    opacity: 0.08;
+    animation: floatStars 60s linear infinite;
+    pointer-events: none;
+    z-index: -1;
+    letter-spacing: 8rem;
+    line-height: 8rem;
+}
+
+@keyframes floatStars {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(-10%, -10%) rotate(360deg); }
+}
+
+/* 🌸 Burbujas Flotantes Decorativas 🌸 */
+body::after {
     content: '';
     position: fixed;
     top: 0;
@@ -38,553 +69,784 @@ body::before {
     width: 100%;
     height: 100%;
     background: 
-        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.05) 0%, transparent 50%);
+        radial-gradient(circle at 15% 20%, rgba(255, 182, 193, 0.15) 0%, transparent 30%),
+        radial-gradient(circle at 85% 30%, rgba(221, 160, 221, 0.15) 0%, transparent 30%),
+        radial-gradient(circle at 50% 70%, rgba(176, 224, 230, 0.15) 0%, transparent 30%),
+        radial-gradient(circle at 30% 80%, rgba(193, 225, 193, 0.15) 0%, transparent 30%),
+        radial-gradient(circle at 70% 60%, rgba(255, 192, 203, 0.15) 0%, transparent 30%);
     pointer-events: none;
     z-index: -1;
+    animation: bubbleFloat 20s ease-in-out infinite;
 }
 
-/* Navbar futurista */
+@keyframes bubbleFloat {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.1); }
+}
+
+/* 💕 Navbar Kawaii 💕 */
 .navbar {
-    background: var(--gradient-dark) !important;
-    box-shadow: 0 4px 30px rgba(106, 13, 173, 0.4);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--gradient-primary) !important;
+    box-shadow: var(--shadow-dreamy);
+    backdrop-filter: blur(15px);
+    border-bottom: 3px solid rgba(255, 192, 203, 0.3);
+    position: relative;
+}
+
+.navbar::before {
+    content: '💖 ✨ 🌸 ✨ 💖 ✨ 🌸 ✨ 💖 ✨ 🌸 ✨ 💖';
+    position: absolute;
+    top: -25px;
+    left: 0;
+    width: 100%;
+    font-size: 1.2rem;
+    text-align: center;
+    animation: sparkleNavbar 3s ease-in-out infinite;
+}
+
+@keyframes sparkleNavbar {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.1); }
 }
 
 .navbar-brand {
-    font-weight: 800;
-    font-size: 1.6rem;
-    background: linear-gradient(45deg, #E6E6FA, #DDA0DD);
+    font-weight: 900;
+    font-size: 1.8rem;
+    background: linear-gradient(45deg, #FF69B4, #FFB6C1, #DDA0DD, #E6E6FA);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 30px rgba(218, 112, 214, 0.5);
+    text-shadow: 2px 2px 4px rgba(255, 105, 180, 0.3);
+    position: relative;
+    padding: 0 15px;
+}
+
+.navbar-brand::before {
+    content: '💖';
+    position: absolute;
+    left: -10px;
+    animation: heartBeat 1.5s ease-in-out infinite;
+}
+
+.navbar-brand::after {
+    content: '✨';
+    position: absolute;
+    right: -10px;
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+}
+
+@keyframes sparkle {
+    0%, 100% { opacity: 0.5; transform: rotate(0deg) scale(1); }
+    50% { opacity: 1; transform: rotate(180deg) scale(1.3); }
 }
 
 .navbar-nav .nav-link {
-    color: #E6E6FA !important;
-    font-weight: 500;
+    color: #8B6B8B !important;
+    font-weight: 600;
+    transition: all 0.4s ease;
+    border-radius: 20px;
+    margin: 0 8px;
+    padding: 10px 20px !important;
+    position: relative;
+}
+
+.navbar-nav .nav-link::before {
+    content: '🌟';
+    position: absolute;
+    left: -5px;
+    opacity: 0;
     transition: all 0.3s ease;
-    border-radius: 8px;
-    margin: 0 5px;
+}
+
+.navbar-nav .nav-link:hover::before,
+.navbar-nav .nav-link.active::before {
+    opacity: 1;
+    left: 5px;
 }
 
 .navbar-nav .nav-link:hover,
 .navbar-nav .nav-link.active {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 182, 193, 0.4);
 }
 
-/* ============ ESTILOS PARA ESTADO ACTUAL DEL CARRO ============ */
+/* 🌸 Cards Encantadoras con Efectos Mágicos 🌸 */
+.card {
+    border: none;
+    border-radius: 25px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 240, 245, 0.95));
+    backdrop-filter: blur(20px);
+    border: 3px solid rgba(255, 182, 193, 0.3);
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: var(--shadow-soft);
+    overflow: visible;
+    position: relative;
+}
 
-.status-card {
-    padding: 1.5rem;
-    border-radius: 15px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    height: 100%;
+.card::before {
+    content: '✨';
+    position: absolute;
+    top: -15px;
+    right: 20px;
+    font-size: 2rem;
+    opacity: 0;
+    transition: all 0.4s ease;
+    animation: floatSparkle 3s ease-in-out infinite;
+}
+
+.card::after {
+    content: '💖';
+    position: absolute;
+    bottom: -15px;
+    left: 20px;
+    font-size: 2rem;
+    opacity: 0;
+    transition: all 0.4s ease;
+    animation: floatHeart 3s ease-in-out infinite;
+    animation-delay: 1.5s;
+}
+
+@keyframes floatSparkle {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(180deg); }
+}
+
+@keyframes floatHeart {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.card:hover::before,
+.card:hover::after {
+    opacity: 1;
+}
+
+.card:hover {
+    transform: translateY(-15px) scale(1.03) rotate(1deg);
+    box-shadow: 
+        var(--shadow-dreamy),
+        0 0 40px rgba(255, 182, 193, 0.3),
+        inset 0 0 30px rgba(255, 255, 255, 0.5);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 1), rgba(255, 228, 225, 1));
+    border-color: rgba(255, 105, 180, 0.5);
+}
+
+/* 💗 Headers de Cards Adorables 💗 */
+.card-header {
+    border-radius: 22px 22px 0 0 !important;
+    font-weight: 800;
+    border-bottom: 3px solid rgba(255, 182, 193, 0.3);
+    padding: 1.5rem 2rem;
+    font-size: 1.2rem;
     position: relative;
     overflow: hidden;
 }
 
-.status-card::before {
+.card-header::before {
     content: '';
     position: absolute;
     top: 0;
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transition: left 0.6s;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: shimmer 3s infinite;
 }
 
-.status-card:hover::before {
-    left: 100%;
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+.bg-primary { 
+    background: var(--gradient-candy) !important; 
+    color: #8B6B8B !important;
+}
+.bg-success { 
+    background: var(--gradient-ocean) !important; 
+    color: #6B8B8B !important;
+}
+.bg-info { 
+    background: var(--gradient-dream) !important; 
+    color: #8B8B6B !important;
+}
+.bg-warning { 
+    background: var(--gradient-sunset) !important; 
+    color: #8B6B6B !important;
+}
+.bg-dark { 
+    background: var(--gradient-secondary) !important; 
+    color: #8B6B8B !important;
+}
+
+/* 🌟 Tarjetas de Estado Actual Mágicas 🌟 */
+.status-card {
+    padding: 2rem;
+    border-radius: 25px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 240, 245, 0.9));
+    backdrop-filter: blur(20px);
+    border: 3px solid;
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: var(--shadow-soft);
+    height: 100%;
+    position: relative;
+    overflow: visible;
+}
+
+.status-card::before {
+    content: '⭐';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    animation: twinkle 2s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: rotate(0deg) scale(1); }
+    50% { opacity: 1; transform: rotate(180deg) scale(1.2); }
 }
 
 .status-card:hover {
-    transform: translateY(-8px) scale(1.02);
+    transform: translateY(-12px) scale(1.05) rotate(-2deg);
     box-shadow: 
-        0 15px 35px rgba(106, 13, 173, 0.3),
-        0 0 60px rgba(138, 43, 226, 0.2);
-    background: rgba(255, 255, 255, 0.12);
+        0 20px 50px rgba(255, 182, 193, 0.4),
+        0 0 60px rgba(221, 160, 221, 0.3),
+        inset 0 0 40px rgba(255, 255, 255, 0.6);
 }
 
-.status-value {
-    min-height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 1rem 0;
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-.status-card i {
-    opacity: 0.9;
-    filter: drop-shadow(0 0 10px rgba(138, 43, 226, 0.3));
-}
-
-.status-card h5 {
-    color: #E6E6FA;
-    font-weight: 600;
-    margin-bottom: 1rem;
-}
-
-/* Estados específicos para las tarjetas de estado */
 .status-card:nth-child(1) {
-    border-left: 4px solid #8A2BE2;
+    border-color: #FFB6C1;
+    background: linear-gradient(145deg, rgba(255, 240, 245, 0.95), rgba(255, 182, 193, 0.2));
+}
+
+.status-card:nth-child(1)::before {
+    content: '💖';
 }
 
 .status-card:nth-child(2) {
-    border-left: 4px solid #FF6B6B;
+    border-color: #DDA0DD;
+    background: linear-gradient(145deg, rgba(255, 240, 245, 0.95), rgba(221, 160, 221, 0.2));
+}
+
+.status-card:nth-child(2)::before {
+    content: '🌸';
 }
 
 .status-card:nth-child(3) {
-    border-left: 4px solid #4FC3F7;
+    border-color: #B0E0E6;
+    background: linear-gradient(145deg, rgba(255, 240, 245, 0.95), rgba(176, 224, 230, 0.2));
 }
 
-/* Badges para estados en la sección de estado actual */
+.status-card:nth-child(3)::before {
+    content: '✨';
+}
+
+.status-value {
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 1.5rem 0;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.status-card i {
+    opacity: 1;
+    filter: drop-shadow(0 5px 15px rgba(255, 105, 180, 0.4));
+}
+
+.status-card h5 {
+    color: #8B6B8B;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+/* 💕 Badges Kawaii 💕 */
 #currentStatus .badge,
 .status-value .badge {
-    font-size: 0.9rem;
-    padding: 10px 20px;
-    border-radius: 15px;
-    font-weight: 700;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    font-size: 1rem;
+    padding: 12px 24px;
+    border-radius: 20px;
+    font-weight: 800;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    box-shadow: var(--shadow-soft);
+    position: relative;
 }
 
-/* Texto en las tarjetas de estado */
 .status-value .text-success {
-    color: #9C27B0 !important;
-    font-weight: 700;
-    text-shadow: 0 0 10px rgba(156, 39, 176, 0.3);
+    color: #FF69B4 !important;
+    font-weight: 800;
+    text-shadow: 2px 2px 4px rgba(255, 105, 180, 0.3);
 }
 
 .status-value .text-warning {
-    color: #FF6B6B !important;
-    font-weight: 700;
-    text-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+    color: #DDA0DD !important;
+    font-weight: 800;
+    text-shadow: 2px 2px 4px rgba(221, 160, 221, 0.3);
 }
 
-.status-value .text-muted {
-    font-style: italic;
-    opacity: 0.8;
-}
-
-/* Timestamp styling */
+/* ⏰ Timestamps Lindos ⏰ */
 #statusTimestamp,
 #lastMovementTime,
 #lastObstacleTime {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: #B39DDB !important;
-    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #B8A8B8 !important;
+    margin-top: 0.8rem;
+    font-style: italic;
 }
 
-/* Efectos de hover específicos para estado actual */
-#current-status-section .card {
-    border: none;
-    box-shadow: 0 8px 32px rgba(106, 13, 173, 0.2);
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(15px);
-}
-
-#current-status-section .card-header {
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-    background: var(--gradient-primary);
-    font-weight: 700;
-}
-
-/* Cards con efecto glassmorphism */
-.card {
-    border: none;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
-}
-
-.card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transition: left 0.6s;
-}
-
-.card:hover::before {
-    left: 100%;
-}
-
-.card:hover {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: 
-        0 20px 40px rgba(106, 13, 173, 0.3),
-        0 0 80px rgba(138, 43, 226, 0.2);
-    background: rgba(255, 255, 255, 0.12);
-}
-
-/* Headers de cards */
-.card-header {
-    border-radius: 20px 20px 0 0 !important;
-    font-weight: 700;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 1.2rem 1.5rem;
-    font-size: 1.1rem;
-}
-
-.bg-primary { background: var(--gradient-primary) !important; }
-.bg-success { background: var(--gradient-success) !important; }
-.bg-info { background: var(--gradient-info) !important; }
-.bg-warning { background: var(--gradient-warning) !important; }
-.bg-dark { background: var(--gradient-dark) !important; }
-
-/* Tarjetas de dashboard */
-.card.bg-primary,
-.card.bg-success,
-.card.bg-info,
-.card.bg-warning {
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
-}
-
-.card.bg-primary:hover,
-.card.bg-success:hover,
-.card.bg-info:hover,
-.card.bg-warning:hover {
-    transform: translateY(-8px) scale(1.05);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-}
-
-/* Contenedores de mensajes */
+/* 📱 Contenedor de Mensajes Encantador 📱 */
 .message-container {
-    height: 300px;
+    height: 320px;
     overflow-y: auto;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 25px;
+    background: linear-gradient(145deg, rgba(255, 240, 245, 0.6), rgba(230, 230, 250, 0.6));
+    border-radius: 25px;
+    border: 3px solid rgba(255, 182, 193, 0.3);
     margin: 0;
+    position: relative;
 }
 
-/* Items de mensajes */
+.message-container::before {
+    content: '💌';
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.5rem;
+    opacity: 0.3;
+}
+
+/* 💬 Items de Mensajes Adorables 💬 */
 .message-item {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 15px 18px;
-    margin-bottom: 12px;
-    border-left: 5px solid;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    padding: 18px 22px;
+    margin-bottom: 15px;
+    border-left: 6px solid;
+    box-shadow: 0 5px 20px rgba(255, 182, 193, 0.2);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 182, 193, 0.2);
+    position: relative;
+}
+
+.message-item::before {
+    content: '🌟';
+    position: absolute;
+    left: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.message-item:hover::before {
+    opacity: 1;
+    left: -15px;
 }
 
 .message-item:hover {
-    transform: translateX(8px) translateY(-2px);
+    transform: translateX(10px) translateY(-5px) scale(1.02);
     box-shadow: 
-        0 8px 25px rgba(0, 0, 0, 0.2),
-        0 0 20px rgba(138, 43, 226, 0.2);
-    background: rgba(255, 255, 255, 0.15);
+        0 10px 30px rgba(255, 182, 193, 0.3),
+        0 0 30px rgba(221, 160, 221, 0.2);
+    background: rgba(255, 255, 255, 0.95);
 }
 
-/* Tipos de mensajes */
+/* 🎨 Tipos de Mensajes con Personalidad 🎨 */
 .message-item.movement {
-    border-left-color: #7E57C2;
-    background: linear-gradient(135deg, rgba(126, 87, 194, 0.15), rgba(92, 107, 192, 0.1));
+    border-left-color: #B0E0E6;
+    background: linear-gradient(135deg, rgba(176, 224, 230, 0.2), rgba(230, 230, 250, 0.15));
+}
+
+.message-item.movement::after {
+    content: '🚗💨';
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 1.2rem;
+    opacity: 0.5;
 }
 
 .message-item.obstacle {
-    border-left-color: #EC407A;
-    background: linear-gradient(135deg, rgba(236, 64, 122, 0.15), rgba(171, 71, 188, 0.1));
+    border-left-color: #FFB6C1;
+    background: linear-gradient(135deg, rgba(255, 182, 193, 0.2), rgba(221, 160, 221, 0.15));
+}
+
+.message-item.obstacle::after {
+    content: '⚠️💫';
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 1.2rem;
+    opacity: 0.5;
 }
 
 .message-item.emergency {
-    border-left-color: #F44336;
-    background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(229, 57, 53, 0.15));
-    animation: emergencyPulse 2s infinite;
+    border-left-color: #FF69B4;
+    background: linear-gradient(135deg, rgba(255, 105, 180, 0.25), rgba(255, 182, 193, 0.2));
+    animation: emergencyPulseKawaii 2s infinite;
+}
+
+.message-item.emergency::after {
+    content: '🚨💖';
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 1.2rem;
+    opacity: 0.7;
+    animation: heartBeat 1s infinite;
+}
+
+@keyframes emergencyPulseKawaii {
+    0%, 100% { 
+        box-shadow: 
+            0 5px 20px rgba(255, 182, 193, 0.2),
+            0 0 0 0 rgba(255, 105, 180, 0.4);
+    }
+    50% { 
+        box-shadow: 
+            0 5px 20px rgba(255, 182, 193, 0.3),
+            0 0 0 15px rgba(255, 105, 180, 0);
+    }
 }
 
 .message-item.system {
-    border-left-color: #26A69A;
-    background: linear-gradient(135deg, rgba(38, 166, 154, 0.15), rgba(102, 187, 106, 0.1));
+    border-left-color: #C1E1C1;
+    background: linear-gradient(135deg, rgba(193, 225, 193, 0.2), rgba(230, 230, 250, 0.15));
 }
 
-/* Header de mensajes */
+.message-item.system::after {
+    content: '⚙️✨';
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 1.2rem;
+    opacity: 0.5;
+}
+
+/* 📝 Header de Mensajes 📝 */
 .message-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .message-time {
-    font-size: 0.75rem;
-    color: #B39DDB;
-    font-weight: 500;
+    font-size: 0.8rem;
+    color: #B8A8B8;
+    font-weight: 600;
+    font-style: italic;
 }
 
 .message-type {
-    font-size: 0.7rem;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 6px 14px;
+    border-radius: 15px;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 .message-type.movement {
-    background: var(--gradient-movement);
+    background: linear-gradient(135deg, #B0E0E6, #87CEEB);
     color: white;
 }
 
 .message-type.obstacle {
-    background: var(--gradient-obstacle);
+    background: linear-gradient(135deg, #FFB6C1, #FF69B4);
     color: white;
 }
 
 .message-type.emergency {
-    background: var(--gradient-danger);
+    background: linear-gradient(135deg, #FF69B4, #FF1493);
     color: white;
 }
 
 .message-type.system {
-    background: var(--gradient-system);
+    background: linear-gradient(135deg, #C1E1C1, #90EE90);
     color: white;
 }
 
 .message-content {
-    font-size: 0.95rem;
-    color: #E6E6FA;
+    font-size: 1rem;
+    color: #8B6B8B;
     margin: 0;
-    line-height: 1.4;
+    line-height: 1.6;
+    font-weight: 500;
 }
 
-/* Botones con diseño morado */
+/* 🎀 Botones Mágicos y Adorables 🎀 */
 .btn {
     border: none;
-    border-radius: 12px;
-    font-weight: 600;
-    padding: 10px 20px;
-    transition: all 0.3s ease;
+    border-radius: 20px;
+    font-weight: 700;
+    padding: 12px 28px;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
     overflow: hidden;
+    box-shadow: var(--shadow-soft);
 }
 
 .btn::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
 }
 
 .btn:hover::before {
-    left: 100%;
+    width: 300px;
+    height: 300px;
+}
+
+.btn::after {
+    content: '✨';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.btn:hover::after {
+    right: 10px;
+    opacity: 1;
 }
 
 .btn-success {
-    background: var(--gradient-success);
-    box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
+    background: linear-gradient(135deg, #FFB6C1, #FF69B4);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .btn-success:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(156, 39, 176, 0.6);
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 12px 30px rgba(255, 105, 180, 0.5);
+    background: linear-gradient(135deg, #FF69B4, #FFB6C1);
 }
 
 .btn-primary {
-    background: var(--gradient-primary);
-    box-shadow: 0 6px 20px rgba(106, 13, 173, 0.4);
+    background: linear-gradient(135deg, #DDA0DD, #BA55D3);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .btn-primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(106, 13, 173, 0.6);
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 12px 30px rgba(221, 160, 221, 0.5);
+    background: linear-gradient(135deg, #BA55D3, #DDA0DD);
 }
 
 .btn-warning {
-    background: var(--gradient-warning);
-    box-shadow: 0 6px 20px rgba(103, 58, 183, 0.4);
+    background: linear-gradient(135deg, #FFDAB9, #FFB6C1);
+    color: #8B6B8B;
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .btn-warning:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(103, 58, 183, 0.6);
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 12px 30px rgba(255, 218, 185, 0.5);
 }
 
 .btn-outline-secondary {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #E6E6FA;
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px solid #DDA0DD;
+    color: #8B6B8B;
 }
 
 .btn-outline-secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-3px);
+    background: rgba(221, 160, 221, 0.3);
+    transform: translateY(-5px) scale(1.05);
+    border-color: #FF69B4;
 }
 
-/* Badges morados */
+/* 🏷️ Badges Pastel Adorables 🏷️ */
 .badge {
-    font-size: 0.75rem;
-    padding: 8px 16px;
-    border-radius: 12px;
-    font-weight: 700;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 0.85rem;
+    padding: 10px 20px;
+    border-radius: 18px;
+    font-weight: 800;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.bg-success { background: var(--gradient-success) !important; }
-.bg-primary { background: var(--gradient-primary) !important; }
-.bg-warning { background: var(--gradient-warning) !important; }
-.bg-danger { background: var(--gradient-danger) !important; }
-.bg-info { background: var(--gradient-info) !important; }
-.bg-secondary { background: rgba(255, 255, 255, 0.15) !important; }
+.bg-success { background: linear-gradient(135deg, #FFB6C1, #FF69B4) !important; }
+.bg-primary { background: linear-gradient(135deg, #DDA0DD, #BA55D3) !important; }
+.bg-warning { background: linear-gradient(135deg, #FFDAB9, #FFB6C1) !important; }
+.bg-danger { background: linear-gradient(135deg, #FF69B4, #FF1493) !important; }
+.bg-info { background: linear-gradient(135deg, #B0E0E6, #87CEEB) !important; }
+.bg-secondary { background: linear-gradient(135deg, #E6E6FA, #DDA0DD) !important; }
 
-/* Form controls */
+/* 📝 Form Controls Lindos 📝 */
 .form-select, .form-control {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    color: #E6E6FA;
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid rgba(255, 182, 193, 0.4);
+    border-radius: 15px;
+    color: #8B6B8B;
     backdrop-filter: blur(10px);
+    padding: 12px 18px;
+    font-weight: 500;
 }
 
 .form-select:focus, .form-control:focus {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: #8A2BE2;
-    box-shadow: 0 0 0 0.2rem rgba(138, 43, 226, 0.25);
-    color: #E6E6FA;
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #FF69B4;
+    box-shadow: 0 0 0 0.3rem rgba(255, 105, 180, 0.25);
+    color: #8B6B8B;
 }
 
 .form-check-input:checked {
-    background-color: #8A2BE2;
-    border-color: #8A2BE2;
+    background-color: #FF69B4;
+    border-color: #FF69B4;
+    box-shadow: 0 0 10px rgba(255, 105, 180, 0.5);
 }
 
 .form-label {
-    color: #E6E6FA;
-    font-weight: 600;
+    color: #8B6B8B;
+    font-weight: 700;
 }
 
-/* Scrollbar personalizado */
+/* 📜 Scrollbar Adorable 📜 */
 .message-container::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
 }
 
 .message-container::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 182, 193, 0.2);
     border-radius: 10px;
 }
 
 .message-container::-webkit-scrollbar-thumb {
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, #FFB6C1, #DDA0DD);
     border-radius: 10px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .message-container::-webkit-scrollbar-thumb:hover {
-    background: var(--gradient-secondary);
+    background: linear-gradient(135deg, #FF69B4, #BA55D3);
 }
 
-/* Animaciones */
-@keyframes fadeIn {
+/* ✨ Animaciones Mágicas ✨ */
+@keyframes fadeInMagical {
     from { 
         opacity: 0; 
-        transform: translateY(25px) scale(0.95); 
+        transform: translateY(30px) scale(0.9) rotate(-5deg); 
     }
     to { 
         opacity: 1; 
-        transform: translateY(0) scale(1); 
+        transform: translateY(0) scale(1) rotate(0deg); 
     }
 }
 
-@keyframes emergencyPulse {
+@keyframes glowMagical {
     0%, 100% { 
-        box-shadow: 
-            0 4px 15px rgba(0, 0, 0, 0.1),
-            0 0 0 0 rgba(244, 67, 54, 0.4);
+        box-shadow: 0 0 10px rgba(255, 182, 193, 0.5);
+        filter: brightness(1);
     }
     50% { 
-        box-shadow: 
-            0 4px 15px rgba(0, 0, 0, 0.1),
-            0 0 0 10px rgba(244, 67, 54, 0);
+        box-shadow: 0 0 30px rgba(255, 105, 180, 0.8), 0 0 50px rgba(221, 160, 221, 0.6);
+        filter: brightness(1.2);
     }
 }
 
-@keyframes glow {
+@keyframes floatingStar {
     0%, 100% { 
-        box-shadow: 0 0 5px rgba(138, 43, 226, 0.5);
+        transform: translateY(0) rotate(0deg); 
     }
     50% { 
-        box-shadow: 0 0 20px rgba(138, 43, 226, 0.8), 0 0 30px rgba(138, 43, 226, 0.6);
+        transform: translateY(-15px) rotate(180deg); 
     }
 }
 
 .fade-in {
-    animation: fadeIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    animation: fadeInMagical 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .glow {
-    animation: glow 2s ease-in-out infinite;
+    animation: glowMagical 3s ease-in-out infinite;
 }
 
-/* Stats numbers */
-.display-6 {
-    font-weight: 300;
-}
+/* 🌈 Colores de Texto Pastel 🌈 */
+.text-primary { color: #FF69B4 !important; }
+.text-success { color: #90EE90 !important; }
+.text-warning { color: #FFDAB9 !important; }
+.text-info { color: #87CEEB !important; }
+.text-danger { color: #FF1493 !important; }
+.text-muted { color: #B8A8B8 !important; }
 
-.text-primary { color: #8A2BE2 !important; }
-.text-success { color: #9C27B0 !important; }
-.text-warning { color: #673AB7 !important; }
-.text-info { color: #5D3FD3 !important; }
-.text-danger { color: #E91E63 !important; }
-.text-muted { color: #B39DDB !important; }
-
-/* Footer */
+/* 👣 Footer Encantador 👣 */
 footer {
-    background: var(--gradient-dark) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 3rem;
+    background: var(--gradient-primary) !important;
+    border-top: 3px solid rgba(255, 182, 193, 0.3);
+    margin-top: 4rem;
+    padding: 2rem 0;
+    position: relative;
 }
 
-/* Responsive */
+footer::before {
+    content: '💖 ✨ 🌸 ✨ 💖';
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, #FFF0F5, #FFE4E1);
+    padding: 5px 30px;
+    border-radius: 20px;
+    box-shadow: var(--shadow-soft);
+}
+
+/* 📱 Responsive Kawaii 📱 */
 @media (max-width: 768px) {
+    body::before {
+        font-size: 2rem;
+        letter-spacing: 4rem;
+        line-height: 4rem;
+    }
+    
     .message-container {
-        height: 250px;
+        height: 280px;
+        padding: 20px;
     }
     
     .card:hover {
-        transform: translateY(-5px);
+        transform: translateY(-8px) scale(1.02);
     }
     
     .btn {
-        padding: 8px 16px;
-        font-size: 0.9rem;
+        padding: 10px 20px;
+        font-size: 0.95rem;
     }
     
     .navbar-brand {
-        font-size: 1.3rem;
+        font-size: 1.5rem;
     }
     
-    /* Responsive para estado actual */
     .status-card {
-        padding: 1rem;
-        margin-bottom: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
     }
     
     .status-card i.display-4 {
@@ -592,79 +854,87 @@ footer {
     }
     
     .status-value {
-        min-height: 40px;
-        font-size: 1rem;
+        min-height: 50px;
+        font-size: 1.1rem;
     }
 }
 
-/* Efectos de texto brillante */
-.glow-text {
-    text-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
-}
-
-/* Placeholders mejorados */
-.text-center.text-muted {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 15px;
-    padding: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Efecto de conexión activa */
+/* 💫 Efectos Especiales Adicionales 💫 */
 .status-connected {
     position: relative;
 }
 
 .status-connected::after {
-    content: '';
+    content: '💚';
     position: absolute;
     top: 50%;
-    right: -10px;
-    width: 8px;
-    height: 8px;
-    background: #00E676;
-    border-radius: 50%;
+    right: -15px;
+    font-size: 1.2rem;
     transform: translateY(-50%);
-    animation: statusPulse 2s infinite;
+    animation: heartBeat 2s infinite;
 }
 
-@keyframes statusPulse {
-    0%, 100% { 
-        box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7);
+.status-update {
+    animation: statusUpdateMagical 1s ease-out;
+}
+
+@keyframes statusUpdateMagical {
+    0% {
+        background: rgba(255, 182, 193, 0.5);
+        transform: scale(1) rotate(0deg);
     }
-    70% { 
-        box-shadow: 0 0 0 10px rgba(0, 230, 118, 0);
+    50% {
+        background: rgba(255, 105, 180, 0.7);
+        transform: scale(1.08) rotate(3deg);
+    }
+    100% {
+        background: rgba(255, 182, 193, 0.5);
+        transform: scale(1) rotate(0deg);
     }
 }
 
-/* Mejoras para las estadísticas */
+/* 🌟 Detalles Finales Mágicos 🌟 */
+.text-center.text-muted {
+    background: linear-gradient(145deg, rgba(255, 240, 245, 0.6), rgba(230, 230, 250, 0.6));
+    border-radius: 25px;
+    padding: 2.5rem;
+    border: 3px solid rgba(255, 182, 193, 0.2);
+    position: relative;
+}
+
+.text-center.text-muted::before {
+    content: '🌟';
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    animation: floatingStar 3s ease-in-out infinite;
+}
+
+/* 💝 Estadísticas Hermosas 💝 */
 .card-body .row.text-center h3 {
-    font-size: 2.2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.8rem;
+    background: linear-gradient(45deg, #FF69B4, #DDA0DD, #87CEEB);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .card-body .row.text-center p {
-    font-size: 0.9rem;
-    opacity: 0.8;
+    font-size: 1rem;
+    opacity: 0.9;
+    font-weight: 600;
+    color: #8B6B8B;
 }
 
-/* Animación especial para actualizaciones de estado */
-.status-update {
-    animation: statusUpdate 0.8s ease-out;
+/* 🎪 Efectos de Brillo en Iconos 🎪 */
+.card i, .status-card i {
+    transition: all 0.4s ease;
 }
 
-@keyframes statusUpdate {
-    0% {
-        background: rgba(138, 43, 226, 0.3);
-        transform: scale(1);
-    }
-    50% {
-        background: rgba(138, 43, 226, 0.6);
-        transform: scale(1.05);
-    }
-    100% {
-        background: rgba(138, 43, 226, 0.3);
-        transform: scale(1);
-    }
+.card:hover i, .status-card:hover i {
+    transform: scale(1.2) rotate(10deg);
+    filter: drop-shadow(0 8px 20px rgba(255, 105, 180, 0.6));
 }
