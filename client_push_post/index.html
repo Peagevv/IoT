@@ -61,10 +61,94 @@
                 font-size: 0.75rem;
             }
         }
+
+        /* Estilos para los indicadores de estado */
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-indicator.online {
+            background-color: #28a745;
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+        }
+        
+        .status-indicator.offline {
+            background-color: #dc3545;
+            box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+        }
+        
+        .battery-container {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        .battery-level {
+            height: 8px;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* Estilos para mensajes WebSocket */
+        .ws-message {
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .ws-info {
+            background: linear-gradient(135deg, #D4E4F7, #C3D9F0);
+            color: #4A6FA5;
+            border-left: 4px solid #4A6FA5;
+        }
+        
+        .ws-success {
+            background: linear-gradient(135deg, #D5EFE8, #B8E6D5);
+            color: #2E7D5F;
+            border-left: 4px solid #2E7D5F;
+        }
+        
+        .ws-warning {
+            background: linear-gradient(135deg, #FFDFD3, #FFCBB8);
+            color: #A0522D;
+            border-left: 4px solid #A0522D;
+        }
+        
+        .ws-danger {
+            background: linear-gradient(135deg, #FFD1DC, #FFB3C6);
+            color: #C75B7A;
+            border-left: 4px solid #C75B7A;
+        }
+
+        /* Animaciones */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .new-movement {
+            animation: highlightRow 2s ease;
+        }
+
+        @keyframes highlightRow {
+            0% { background-color: rgba(40, 167, 69, 0.3); }
+            100% { background-color: transparent; }
+        }
     </style>
 </head>
 <body>
-    <!-- Navbar CORREGIDO -->
+    <!-- Capas de estrellas -->
+    <div class="stars-layer-1"></div>
+    <div class="stars-layer-2"></div>
+    <div class="stars-layer-3"></div>
+    <div class="floating-decorations"></div>
+
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg custom-navbar">
         <div class="container">
             <a class="navbar-brand" href="#">
@@ -72,8 +156,8 @@
             </a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link me-3" href="../index.html">
-    <i class="bi bi-house-door-fill me-1"></i>Inicio
-</a>
+                    <i class="bi bi-house-door-fill me-1"></i>Inicio
+                </a>
             </div>
         </div>
     </nav>
@@ -82,6 +166,9 @@
     <div class="container mt-4">
         <!-- Alertas -->
         <div id="alertsContainer"></div>
+
+        <!-- Mensajes WebSocket -->
+        <div id="wsMessages" class="mb-3"></div>
 
         <!-- ============ SECCIÓN: CONTROL ============ -->
         <section id="control-section">
@@ -104,7 +191,7 @@
                                     </select>
                                 </div>
                                 
-                                <!-- 🆕 CONTROL DE VELOCIDAD -->
+                                <!-- CONTROL DE VELOCIDAD -->
                                 <div class="col-md-6">
                                     <label class="form-label"><strong>Velocidad:</strong></label>
                                     <div class="speed-control d-flex justify-content-between">
@@ -224,7 +311,7 @@
                         </div>
                     </div>
 
-                    <!-- 🆕 CONTROL DE MODO -->
+                    <!-- CONTROL DE MODO -->
                     <div class="card custom-card">
                         <div class="card-header custom-card-header-warning">
                             <h5 class="mb-0">
