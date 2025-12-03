@@ -835,3 +835,23 @@ footer::before {
         line-height: 3rem;
     }
 }
+/* ========== ZOOM GLOBAL AL 67% ========== */
+html {
+    zoom: 0.67;
+}
+
+/* Asegurar que todo sea scrollable */
+body {
+    overflow: auto !important;
+    min-width: 100vw;
+    min-height: 100vh;
+}
+
+/* Corregir elementos fijos */
+.stars-layer-1,
+.stars-layer-2,
+.stars-layer-3,
+.floating-decorations {
+    transform: scale(1.4925);
+    transform-origin: top left;
+}
