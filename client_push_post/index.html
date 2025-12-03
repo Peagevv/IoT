@@ -1,3 +1,5 @@
+<!-- 03 DICIEMBRE 2025
+   Autor: Karla Denisse Hdez. Moguel -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,137 +9,239 @@
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Estilos personalizados DEBE IR DESPUÉS de Bootstrap -->
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Estilos adicionales para la tabla de movimientos */
-        .movement-icon {
-            font-size: 1.2em;
+        /* Estilos generales para hacer todo más compacto */
+        body {
+            overflow-x: hidden;
+        }
+        
+        .custom-card {
+            margin-bottom: 15px;
+        }
+        
+        .custom-card-header-success,
+        .custom-card-header-primary,
+        .custom-card-header-info,
+        .custom-card-header-warning,
+        .custom-card-header-dark,
+        .custom-card-header-secondary {
+            padding: 0.75rem 1rem;
+        }
+        
+        .custom-card-header-success h4,
+        .custom-card-header-primary h4,
+        .custom-card-header-info h4,
+        .custom-card-header-warning h4 {
+            font-size: 1.1rem;
+            margin-bottom: 0;
+        }
+        
+        .custom-card-header-success h5,
+        .custom-card-header-info h5,
+        .custom-card-header-warning h5,
+        .custom-card-header-dark h5 {
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+        
+        /* Estilos compactos para tablas */
+        .compact-table {
+            font-size: 0.85rem;
+            margin-bottom: 0;
+        }
+        
+        .compact-table th {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        
+        .compact-table td {
+            padding: 0.4rem 0.75rem;
+            vertical-align: middle;
         }
         
         .table-responsive {
-            max-height: 400px;
+            max-height: 250px;
             overflow-y: auto;
         }
         
-        .table tbody tr:hover {
-            background-color: rgba(0, 123, 255, 0.1);
+        .table-responsive.small {
+            max-height: 200px;
         }
         
-        /* Badges personalizados para velocidades */
-        .badge.bg-success {
-            background: linear-gradient(135deg, #28a745, #20c997) !important;
+        /* Botones más pequeños */
+        .btn-sm-custom {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.75rem;
+            line-height: 1.2;
         }
         
-        .badge.bg-warning {
-            background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+        /* Estilos para controles compactos */
+        .movement-btn {
+            padding: 0.5rem 0.3rem;
+            font-size: 0.85rem;
+            margin: 0.1rem;
         }
         
-        .badge.bg-danger {
-            background: linear-gradient(135deg, #dc3545, #e83e8c) !important;
+        .movement-btn i {
+            font-size: 1.2rem;
         }
         
-        .badge.bg-secondary {
-            background: linear-gradient(135deg, #6c757d, #495057) !important;
+        .speed-btn {
+            padding: 0.4rem 0.5rem;
+            font-size: 0.8rem;
+            width: 30%;
         }
         
-        .badge.bg-info {
-            background: linear-gradient(135deg, #17a2b8, #6f42c1) !important;
+        .speed-btn i {
+            font-size: 1rem;
         }
         
-        .badge.bg-primary {
-            background: linear-gradient(135deg, #007bff, #0056b3) !important;
+        .mode-btn {
+            padding: 0.5rem;
+            font-size: 0.85rem;
         }
         
-        /* Estilos para la tabla responsiva */
+        /* Estado actual compacto */
+        .status-card {
+            padding: 0.5rem;
+        }
+        
+        .status-card i {
+            font-size: 1.8rem;
+        }
+        
+        .status-card h5 {
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .status-value {
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+        }
+        
+        .status-value .badge {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+        }
+        
+        /* Obstáculos compactos */
+        .obstacle-btn {
+            padding: 0.5rem 0.3rem;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .obstacle-btn i {
+            font-size: 1.5rem;
+        }
+        
+        /* Ajustes de secciones */
+        section {
+            margin-bottom: 1rem;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Contenedor principal compacto */
+        .container {
+            max-width: 1400px;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        /* Footer compacto */
+        .custom-footer {
+            margin-top: 1.5rem;
+            padding: 1rem 0;
+        }
+        
+        .custom-footer h5 {
+            font-size: 1rem;
+        }
+        
+        .custom-footer p {
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+        }
+        
+        /* Ajustes responsive */
         @media (max-width: 768px) {
-            .table-responsive {
-                font-size: 0.875rem;
+            .container {
+                padding-left: 5px;
+                padding-right: 5px;
             }
             
-            .btn-sm {
-                padding: 0.25rem 0.5rem;
+            .movement-btn {
+                padding: 0.4rem 0.2rem;
                 font-size: 0.75rem;
             }
-        }
-
-        /* Estilos para los indicadores de estado */
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        
-        .status-indicator.online {
-            background-color: #28a745;
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
-        }
-        
-        .status-indicator.offline {
-            background-color: #dc3545;
-            box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
-        }
-        
-        .battery-container {
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            padding: 10px;
+            
+            .speed-btn {
+                padding: 0.3rem;
+                font-size: 0.7rem;
+            }
+            
+            .compact-table {
+                font-size: 0.75rem;
+            }
+            
+            .compact-table th,
+            .compact-table td {
+                padding: 0.3rem 0.5rem;
+            }
+            
+            .table-responsive {
+                max-height: 200px;
+            }
         }
         
-        .battery-level {
-            height: 8px;
-            background: linear-gradient(90deg, #28a745, #20c997);
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-
-        /* Estilos para mensajes WebSocket */
-        .ws-message {
-            padding: 12px 16px;
-            margin-bottom: 10px;
-            border-radius: 12px;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        .ws-info {
-            background: linear-gradient(135deg, #D4E4F7, #C3D9F0);
-            color: #4A6FA5;
-            border-left: 4px solid #4A6FA5;
-        }
-        
-        .ws-success {
-            background: linear-gradient(135deg, #D5EFE8, #B8E6D5);
-            color: #2E7D5F;
-            border-left: 4px solid #2E7D5F;
-        }
-        
-        .ws-warning {
-            background: linear-gradient(135deg, #FFDFD3, #FFCBB8);
-            color: #A0522D;
-            border-left: 4px solid #A0522D;
-        }
-        
-        .ws-danger {
-            background: linear-gradient(135deg, #FFD1DC, #FFB3C6);
-            color: #C75B7A;
-            border-left: 4px solid #C75B7A;
-        }
-
-        /* Animaciones */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
+        /* Animaciones y efectos */
         .new-movement {
             animation: highlightRow 2s ease;
         }
-
+        
         @keyframes highlightRow {
             0% { background-color: rgba(40, 167, 69, 0.3); }
             100% { background-color: transparent; }
+        }
+        
+        /* Badges compactos */
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+        }
+        
+        /* Botones de acción en tablas */
+        .action-buttons {
+            white-space: nowrap;
+        }
+        
+        /* Estado de conexión compacto */
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+        }
+        
+        .battery-container {
+            padding: 0.5rem;
+        }
+        
+        .battery-level {
+            height: 6px;
         }
     </style>
 </head>
@@ -163,546 +267,468 @@
     </nav>
 
     <!-- Contenido Principal -->
-    <div class="container mt-4">
+    <div class="container mt-3">
         <!-- Alertas -->
         <div id="alertsContainer"></div>
 
         <!-- Mensajes WebSocket -->
-        <div id="wsMessages" class="mb-3"></div>
+        <div id="wsMessages" class="mb-2"></div>
 
-        <!-- ============ SECCIÓN: CONTROL ============ -->
-        <section id="control-section">
-            <div class="row">
+        <!-- SECCIÓN PRINCIPAL: Control y Estado -->
+        <div class="row">
+            <!-- Columna izquierda: Controles -->
+            <div class="col-lg-8">
                 <!-- Controles de Movimiento -->
-                <div class="col-lg-8">
-                    <div class="card custom-card">
-                        <div class="card-header custom-card-header-success">
-                            <h4 class="mb-0">
-                                <i class="bi bi-joystick"></i> Controles de Movimiento
-                            </h4>
-                        </div>
-                        <div class="card-body">
-                            <!-- Selector de Dispositivo y Control de Velocidad -->
-                            <div class="row mb-4">
-                                <div class="col-md-6">
-                                    <label class="form-label"><strong>Seleccionar Carro:</strong></label>
-                                    <select id="deviceSelect" class="form-select custom-select">
-                                        <option value="1">Cargando...</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- CONTROL DE VELOCIDAD -->
-                                <div class="col-md-6">
-                                    <label class="form-label"><strong>Velocidad:</strong></label>
-                                    <div class="speed-control d-flex justify-content-between">
-                                        <button class="btn speed-btn" data-speed="low" onclick="app.setSpeed('low')">
-                                            <i class="bi bi-speedometer"></i><br>
-                                            <span>Baja</span>
-                                        </button>
-                                        <button class="btn speed-btn active" data-speed="medium" onclick="app.setSpeed('medium')">
-                                            <i class="bi bi-speedometer2"></i><br>
-                                            <span>Media</span>
-                                        </button>
-                                        <button class="btn speed-btn" data-speed="high" onclick="app.setSpeed('high')">
-                                            <i class="bi bi-lightning-fill"></i><br>
-                                            <span>Alta</span>
-                                        </button>
-                                    </div>
-                                    <div class="speed-indicator mt-2">
-                                        <small class="text-muted">
-                                            Velocidad actual: <span id="currentSpeed" class="badge bg-success">Media</span>
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Botones de Movimiento -->
-                            <div class="text-center">
-                                <div class="mb-3">
-                                    <button class="btn custom-btn-primary movement-btn" data-operation="1">
-                                        <i class="bi bi-arrow-up"></i><br>Adelante
-                                    </button>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <button class="btn custom-btn-warning movement-btn me-2" data-operation="9">
-                                        <i class="bi bi-arrow-left"></i><br>Giro Izq 90°
-                                    </button>
-                                    
-                                    <button class="btn custom-btn-danger movement-btn me-2" data-operation="3">
-                                        <i class="bi bi-stop-fill"></i><br>Detener
-                                    </button>
-                                    
-                                    <button class="btn custom-btn-warning movement-btn" data-operation="8">
-                                        <i class="bi bi-arrow-right"></i><br>Giro Der 90°
-                                    </button>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <button class="btn custom-btn-primary movement-btn" data-operation="2">
-                                        <i class="bi bi-arrow-down"></i><br>Atrás
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Controles Avanzados -->
-                            <div class="row mt-4">
-                                <!-- VUELTAS ADELANTE -->
-                                <div class="col-md-3 mb-3">
-                                    <button class="btn custom-btn-info movement-btn w-100" data-operation="4">
-                                        <i class="bi bi-arrow-up-right"></i><br>Vuelta Adelante Der.
-                                    </button>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <button class="btn custom-btn-info movement-btn w-100" data-operation="5">
-                                        <i class="bi bi-arrow-up-left"></i><br>Vuelta Adelante Izq.
-                                    </button>
-                                </div>
-                                
-                                <!-- VUELTAS ATRÁS -->
-                                <div class="col-md-3 mb-3">
-                                    <button class="btn custom-btn-secondary movement-btn w-100" data-operation="6">
-                                        <i class="bi bi-arrow-down-right"></i><br>Vuelta Atrás Der.
-                                    </button>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <button class="btn custom-btn-secondary movement-btn w-100" data-operation="7">
-                                        <i class="bi bi-arrow-down-left"></i><br>Vuelta Atrás Izq.
-                                    </button>
-                                </div>
-                                
-                                <!-- GIROS 360° -->
-                                <div class="col-md-6 mb-3">
-                                    <button class="btn custom-btn-warning movement-btn w-100" data-operation="10">
-                                        <i class="bi bi-arrow-clockwise"></i><br>Giro 360° Derecha
-                                    </button>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <button class="btn custom-btn-warning movement-btn w-100" data-operation="11">
-                                        <i class="bi bi-arrow-counterclockwise"></i><br>Giro 360° Izquierda
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Panel de Modos y Estado -->
-                <div class="col-lg-4">
-                    <!-- Modo Demo -->
-                    <div class="card custom-card">
-                        <div class="card-header custom-card-header-info">
-                            <h5 class="mb-0">
-                                <i class="bi bi-play-circle"></i> Modo Demo
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <button id="demoBtn" class="btn custom-btn-demo w-100 mb-2">
-                                <i class="bi bi-robot"></i> Iniciar Demo Rápido
-                            </button>
-                            <button id="stopBtn" class="btn custom-btn-stop w-100">
-                                <i class="bi bi-exclamation-triangle"></i> Parada Emergencia
-                            </button>
-                            <div class="mt-3">
-                                <small class="text-muted">
-                                    Demo rápido: secuencia predefinida de movimientos.
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- CONTROL DE MODO -->
-                    <div class="card custom-card">
-                        <div class="card-header custom-card-header-warning">
-                            <h5 class="mb-0">
-                                <i class="bi bi-cpu"></i> Modo de Operación
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <button class="btn mode-btn manual active" onclick="setManualMode()">
-                                    <i class="bi bi-joystick"></i> Modo Manual
-                                </button>
-                                <button class="btn mode-btn sequence" onclick="setAutoMode()">
-                                    <i class="bi bi-robot"></i> Modo Autónomo
-                                </button>
-                            </div>
-                            <div class="mt-2 text-center">
-                                <span id="modeIndicator" class="mode-indicator manual">🎮 MODO MANUAL</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Estado de Conexión -->
-                    <div class="card custom-card">
-                        <div class="card-header custom-card-header-dark">
-                            <h5 class="mb-0">
-                                <i class="bi bi-wifi"></i> Estado de Conexión
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row text-center">
-                                <div class="col-6">
-                                    <div class="status-item">
-                                        <i class="bi bi-server display-6 text-primary"></i>
-                                        <h6 class="mt-2">Servidor</h6>
-                                        <div class="d-flex align-items-center justify-content-center">
-                                            <span class="status-indicator online me-2"></span>
-                                            <span id="serverStatus">Conectado</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="status-item">
-                                        <i class="bi bi-car-front display-6 text-success"></i>
-                                        <h6 class="mt-2">Carro</h6>
-                                        <div class="d-flex align-items-center justify-content-center">
-                                            <span class="status-indicator online me-2"></span>
-                                            <span id="carStatus">Conectado</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <div class="battery-container">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <small class="text-muted">Batería:</small>
-                                        <span id="batteryLevel" class="badge bg-success">85%</span>
-                                    </div>
-                                    <div class="battery-level" style="width: 85%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============ SECCIÓN: ESTADO ACTUAL DEL CARRO ============ -->
-        <section id="current-status-section" class="mt-4">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card custom-card">
-                        <div class="card-header custom-card-header-primary">
-                            <h4 class="mb-0">
-                                <i class="bi bi-speedometer2"></i> Estado Actual del Carro
-                            </h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="row text-center">
-                                <div class="col-md-3 mb-3">
-                                    <div class="status-card">
-                                        <i class="bi bi-activity display-4 text-primary"></i>
-                                        <h5 class="mt-2">Último Movimiento</h5>
-                                        <div id="lastMovement" class="status-value">
-                                            <span class="text-muted">Sin movimientos</span>
-                                        </div>
-                                        <small class="text-muted" id="lastMovementTime"></small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <div class="status-card">
-                                        <i class="bi bi-shield-exclamation display-4 text-warning"></i>
-                                        <h5 class="mt-2">Último Obstáculo</h5>
-                                        <div id="lastObstacle" class="status-value">
-                                            <span class="text-muted">Sin obstáculos</span>
-                                        </div>
-                                        <small class="text-muted" id="lastObstacleTime"></small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <div class="status-card">
-                                        <i class="bi bi-play-circle display-4 text-info"></i>
-                                        <h5 class="mt-2">Estado Actual</h5>
-                                        <div id="currentStatus" class="status-value">
-                                            <span class="badge bg-secondary">Detenido</span>
-                                        </div>
-                                        <small class="text-muted" id="statusTimestamp">Actualizado: --:--:--</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <div class="status-card">
-                                        <i class="bi bi-speedometer2 display-4 text-success"></i>
-                                        <h5 class="mt-2">Velocidad</h5>
-                                        <div id="speedStatus" class="status-value">
-                                            <span class="badge bg-success">Media</span>
-                                        </div>
-                                        <small class="text-muted" id="speedTimestamp">Velocidad actual</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============ SECCIÓN: ÚLTIMOS 10 MOVIMIENTOS ============ -->
-        <section id="movement-log-section" class="mt-5">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card custom-card">
-                        <div class="card-header custom-card-header-info">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h4 class="mb-0">
-                                    <i class="bi bi-clock-history me-2"></i>Últimos 10 Movimientos
-                                </h4>
-                                <button id="clearMovementsBtn" class="btn btn-sm btn-outline-light">
-                                    <i class="bi bi-trash"></i> Limpiar
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover table-striped mb-0">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th width="40%">Movimiento</th>
-                                            <th width="15%">Dispositivo</th>
-                                            <th width="15%">Velocidad</th>
-                                            <th width="20%">Hora</th>
-                                            <th width="10%">Acción</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="movementLogTable">
-                                        <!-- Los movimientos se cargarán aquí dinámicamente -->
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted py-4">
-                                                <i class="bi bi-clock-history display-6"></i>
-                                                <p class="mt-2">No hay movimientos recientes</p>
-                                                <small>Los movimientos aparecerán aquí cuando ejecutes comandos</small>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-light">
-                            <small class="text-muted">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Mostrando los últimos 10 movimientos ejecutados por el carro
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============ SECCIÓN: SECUENCIAS ============ -->
-        <section id="sequences-section" class="mt-5">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card custom-card">
-                        <div class="card-header custom-card-header-info">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h4 class="mb-0">
-                                    <i class="bi bi-collection-play"></i> Gestión de Secuencias
-                                </h4>
-                                <button class="btn custom-btn-demo" id="newSequenceBtn">
-                                    <i class="bi bi-plus-circle"></i> Nueva Secuencia
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th>Nombre</th>
-                                            <th>Dispositivo</th>
-                                            <th>Operaciones</th>
-                                            <th>Descripción</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="sequencesTable">
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted py-3">
-                                                <i class="bi bi-collection-play"></i>
-                                                <p class="mt-2">No hay secuencias guardadas</p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============ SECCIÓN: OBSTÁCULOS MANUALES ============ -->
-        <section id="obstacles-section" class="mt-5">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card custom-card">
-                        <div class="card-header custom-card-header-warning">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h4 class="mb-0">
-                                    <i class="bi bi-shield-exclamation"></i> Gestión de Obstáculos Manuales
-                                </h4>
-                                <button class="btn custom-btn-stop" id="clearObstaclesBtn">
-                                    <i class="bi bi-trash"></i> Limpiar Todo
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <!-- Botones de obstáculos -->
-                            <div class="row text-center mb-4">
-                                <div class="col-md-3 mb-3">
-                                    <button class="btn custom-btn-warning obstacle-btn w-100" data-ubicacion="frente">
-                                        <i class="bi bi-arrow-up-circle display-6"></i><br>
-                                        Obstáculo Frente
-                                    </button>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <button class="btn custom-btn-warning obstacle-btn w-100" data-ubicacion="atras">
-                                        <i class="bi bi-arrow-down-circle display-6"></i><br>
-                                        Obstáculo Atrás
-                                    </button>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <button class="btn custom-btn-warning obstacle-btn w-100" data-ubicacion="izquierda">
-                                        <i class="bi bi-arrow-left-circle display-6"></i><br>
-                                        Obstáculo Izquierda
-                                    </button>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <button class="btn custom-btn-warning obstacle-btn w-100" data-ubicacion="derecha">
-                                        <i class="bi bi-arrow-right-circle display-6"></i><br>
-                                        Obstáculo Derecha
-                                    </button>
-                                </div>
-                                <div class="col-md-6 offset-md-3 mb-3">
-                                    <button class="btn custom-btn-danger obstacle-btn w-100" data-ubicacion="retroceso">
-                                        <i class="bi bi-exclamation-triangle display-6"></i><br>
-                                        Retroceso Emergencia
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Lista de obstáculos manuales -->
-                            <h5><i class="bi bi-list-ul"></i> Obstáculos Registrados</h5>
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th>Fecha/Hora</th>
-                                            <th>Tipo</th>
-                                            <th>Ubicación</th>
-                                            <th>Distancia</th>
-                                            <th>Origen</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="obstaclesTable">
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted py-3">
-                                                <i class="bi bi-shield-check"></i>
-                                                <p class="mt-2">No hay obstáculos registrados</p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============ SECCIÓN: DISPOSITIVOS ============ -->
-        <section id="devices-section" class="mt-5">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card custom-card">
-                        <div class="card-header custom-card-header-success">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h4 class="mb-0">
-                                    <i class="bi bi-car-front"></i> Gestión de Dispositivos
-                                </h4>
-                                <button class="btn custom-btn-demo" id="newDeviceBtn">
-                                    <i class="bi bi-plus-circle"></i> Nuevo Dispositivo
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th>Nombre</th>
-                                            <th>ID</th>
-                                            <th>Descripción</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="devicesTable">
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted py-3">
-                                                <i class="bi bi-car-front"></i>
-                                                <p class="mt-2">No hay dispositivos registrados</p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Información de Operaciones -->
-        <div class="row mt-5">
-            <div class="col-12">
                 <div class="card custom-card">
-                    <div class="card-header custom-card-header-secondary">
+                    <div class="card-header custom-card-header-success">
+                        <h4 class="mb-0">
+                            <i class="bi bi-joystick"></i> Controles de Movimiento
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Selector y Velocidad -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label"><strong>Carro:</strong></label>
+                                <select id="deviceSelect" class="form-select form-select-sm">
+                                    <option value="1">Cargando...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label"><strong>Velocidad:</strong></label>
+                                <div class="speed-control d-flex justify-content-between">
+                                    <button class="btn speed-btn" data-speed="low" onclick="app.setSpeed('low')">
+                                        <i class="bi bi-speedometer"></i><br>
+                                        <span>Baja</span>
+                                    </button>
+                                    <button class="btn speed-btn active" data-speed="medium" onclick="app.setSpeed('medium')">
+                                        <i class="bi bi-speedometer2"></i><br>
+                                        <span>Media</span>
+                                    </button>
+                                    <button class="btn speed-btn" data-speed="high" onclick="app.setSpeed('high')">
+                                        <i class="bi bi-lightning-fill"></i><br>
+                                        <span>Alta</span>
+                                    </button>
+                                </div>
+                                <div class="speed-indicator mt-1">
+                                    <small class="text-muted">
+                                        Actual: <span id="currentSpeed" class="badge bg-success">Media</span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones principales -->
+                        <div class="text-center">
+                            <div class="mb-2">
+                                <button class="btn custom-btn-primary movement-btn" data-operation="1">
+                                    <i class="bi bi-arrow-up"></i><br>Adelante
+                                </button>
+                            </div>
+                            <div class="mb-2">
+                                <button class="btn custom-btn-warning movement-btn me-1" data-operation="9">
+                                    <i class="bi bi-arrow-left"></i><br>Izq 90°
+                                </button>
+                                <button class="btn custom-btn-danger movement-btn me-1" data-operation="3">
+                                    <i class="bi bi-stop-fill"></i><br>Detener
+                                </button>
+                                <button class="btn custom-btn-warning movement-btn" data-operation="8">
+                                    <i class="bi bi-arrow-right"></i><br>Der 90°
+                                </button>
+                            </div>
+                            <div class="mb-2">
+                                <button class="btn custom-btn-primary movement-btn" data-operation="2">
+                                    <i class="bi bi-arrow-down"></i><br>Atrás
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Controles avanzados -->
+                        <div class="row mt-2">
+                            <div class="col-6 col-md-3 mb-2">
+                                <button class="btn custom-btn-info movement-btn w-100" data-operation="4">
+                                    <i class="bi bi-arrow-up-right"></i><br>V.Adel Der
+                                </button>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <button class="btn custom-btn-info movement-btn w-100" data-operation="5">
+                                    <i class="bi bi-arrow-up-left"></i><br>V.Adel Izq
+                                </button>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <button class="btn custom-btn-secondary movement-btn w-100" data-operation="6">
+                                    <i class="bi bi-arrow-down-right"></i><br>V.Atrás Der
+                                </button>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <button class="btn custom-btn-secondary movement-btn w-100" data-operation="7">
+                                    <i class="bi bi-arrow-down-left"></i><br>V.Atrás Izq
+                                </button>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <button class="btn custom-btn-warning movement-btn w-100" data-operation="10">
+                                    <i class="bi bi-arrow-clockwise"></i><br>360° Der
+                                </button>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <button class="btn custom-btn-warning movement-btn w-100" data-operation="11">
+                                    <i class="bi bi-arrow-counterclockwise"></i><br>360° Izq
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna derecha: Estado y modos -->
+            <div class="col-lg-4">
+                <!-- Modo Demo -->
+                <div class="card custom-card mb-3">
+                    <div class="card-header custom-card-header-info">
                         <h5 class="mb-0">
-                            <i class="bi bi-info-circle"></i> Referencia de Operaciones (11 Movimientos)
+                            <i class="bi bi-play-circle"></i> Modo Demo
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <strong>Básicos:</strong>
-                                <ul class="list-unstyled">
-                                    <li>1 - Adelante</li>
-                                    <li>2 - Atrás</li>
-                                    <li>3 - Detener</li>
-                                </ul>
+                        <button id="demoBtn" class="btn custom-btn-demo w-100 mb-2 btn-sm">
+                            <i class="bi bi-robot"></i> Demo Rápido
+                        </button>
+                        <button id="stopBtn" class="btn custom-btn-stop w-100 btn-sm">
+                            <i class="bi bi-exclamation-triangle"></i> Emergencia
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modo Operación -->
+                <div class="card custom-card mb-3">
+                    <div class="card-header custom-card-header-warning">
+                        <h5 class="mb-0">
+                            <i class="bi bi-cpu"></i> Modo
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn mode-btn manual active btn-sm" onclick="setManualMode()">
+                                <i class="bi bi-joystick"></i> Manual
+                            </button>
+                            <button class="btn mode-btn sequence btn-sm" onclick="setAutoMode()">
+                                <i class="bi bi-robot"></i> Autónomo
+                            </button>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <span id="modeIndicator" class="badge bg-primary">MANUAL</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado Conexión -->
+                <div class="card custom-card">
+                    <div class="card-header custom-card-header-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-wifi"></i> Conexión
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <i class="bi bi-server text-primary"></i>
+                                <h6 class="mt-1">Servidor</h6>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <span class="status-indicator online me-1"></span>
+                                    <small id="serverStatus">Online</small>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <strong>Giros 90°:</strong>
-                                <ul class="list-unstyled">
-                                    <li>8 - Giro 90° derecha</li>
-                                    <li>9 - Giro 90° izquierda</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-3">
-                                <strong>Vueltas Adelante:</strong>
-                                <ul class="list-unstyled">
-                                    <li>4 - Vuelta adelante derecha</li>
-                                    <li>5 - Vuelta adelante izquierda</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-3">
-                                <strong>Vueltas Atrás:</strong>
-                                <ul class="list-unstyled">
-                                    <li>6 - Vuelta atrás derecha</li>
-                                    <li>7 - Vuelta atrás izquierda</li>
-                                </ul>
+                            <div class="col-6">
+                                <i class="bi bi-car-front text-success"></i>
+                                <h6 class="mt-1">Carro</h6>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <span class="status-indicator online me-1"></span>
+                                    <small id="carStatus">Online</small>
+                                </div>
                             </div>
                         </div>
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <strong>Giros 360°:</strong>
-                                <ul class="list-unstyled">
-                                    <li>10 - Giro 360° derecha</li>
-                                    <li>11 - Giro 360° izquierda</li>
-                                </ul>
+                        <div class="mt-2">
+                            <small class="text-muted">Batería:</small>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="battery-level" style="width: 85%"></div>
+                                <span id="batteryLevel" class="badge bg-success ms-2">85%</span>
                             </div>
-                            <div class="col-md-6">
-                                <strong>Total: 11 movimientos</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Estado Actual -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card custom-card">
+                    <div class="card-header custom-card-header-primary">
+                        <h4 class="mb-0">
+                            <i class="bi bi-speedometer2"></i> Estado Actual
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6 col-md-3 mb-2">
+                                <i class="bi bi-activity text-primary"></i>
+                                <h6 class="mt-1">Último Mov.</h6>
+                                <div id="lastMovement" class="status-value">
+                                    <small class="text-muted">Ninguno</small>
+                                </div>
+                                <small class="text-muted" id="lastMovementTime"></small>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <i class="bi bi-shield-exclamation text-warning"></i>
+                                <h6 class="mt-1">Último Obst.</h6>
+                                <div id="lastObstacle" class="status-value">
+                                    <small class="text-muted">Ninguno</small>
+                                </div>
+                                <small class="text-muted" id="lastObstacleTime"></small>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <i class="bi bi-play-circle text-info"></i>
+                                <h6 class="mt-1">Estado</h6>
+                                <div id="currentStatus" class="status-value">
+                                    <span class="badge bg-secondary">Detenido</span>
+                                </div>
+                                <small class="text-muted" id="statusTimestamp">--:--:--</small>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <i class="bi bi-speedometer2 text-success"></i>
+                                <h6 class="mt-1">Velocidad</h6>
+                                <div id="speedStatus" class="status-value">
+                                    <span class="badge bg-success">Media</span>
+                                </div>
+                                <small class="text-muted" id="speedTimestamp">Actual</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN COMBINADA: Tablas Compactas -->
+        <div class="row">
+            <!-- Últimos Movimientos -->
+            <div class="col-lg-6">
+                <div class="card custom-card">
+                    <div class="card-header custom-card-header-info">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clock-history"></i> Últimos Movimientos
+                            </h5>
+                            <button id="clearMovementsBtn" class="btn btn-sm btn-outline-light">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive small">
+                            <table class="table compact-table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Movimiento</th>
+                                        <th>Dispositivo</th>
+                                        <th>Hora</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="movementLogTable">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted py-2">
+                                            <i class="bi bi-clock-history"></i>
+                                            <small>No hay movimientos</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secuencias -->
+            <div class="col-lg-6">
+                <div class="card custom-card">
+                    <div class="card-header custom-card-header-info">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-collection-play"></i> Secuencias
+                            </h5>
+                            <button class="btn btn-sm btn-outline-light" id="newSequenceBtn">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive small">
+                            <table class="table compact-table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Operaciones</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sequencesTable">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted py-2">
+                                            <i class="bi bi-collection-play"></i>
+                                            <small>No hay secuencias</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Obstáculos -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card custom-card">
+                    <div class="card-header custom-card-header-warning">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-shield-exclamation"></i> Obstáculos
+                            </h5>
+                            <button class="btn btn-sm btn-outline-light" id="clearObstaclesBtn">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Botones de obstáculos -->
+                        <div class="row mb-2">
+                            <div class="col-4 col-md mb-1">
+                                <button class="btn btn-warning btn-sm obstacle-btn w-100" data-ubicacion="frente">
+                                    <i class="bi bi-arrow-up-circle"></i>
+                                    <small>Frente</small>
+                                </button>
+                            </div>
+                            <div class="col-4 col-md mb-1">
+                                <button class="btn btn-warning btn-sm obstacle-btn w-100" data-ubicacion="atras">
+                                    <i class="bi bi-arrow-down-circle"></i>
+                                    <small>Atrás</small>
+                                </button>
+                            </div>
+                            <div class="col-4 col-md mb-1">
+                                <button class="btn btn-warning btn-sm obstacle-btn w-100" data-ubicacion="izquierda">
+                                    <i class="bi bi-arrow-left-circle"></i>
+                                    <small>Izquierda</small>
+                                </button>
+                            </div>
+                            <div class="col-6 col-md mb-1">
+                                <button class="btn btn-warning btn-sm obstacle-btn w-100" data-ubicacion="derecha">
+                                    <i class="bi bi-arrow-right-circle"></i>
+                                    <small>Derecha</small>
+                                </button>
+                            </div>
+                            <div class="col-6 col-md mb-1">
+                                <button class="btn btn-danger btn-sm obstacle-btn w-100" data-ubicacion="retroceso">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <small>Emergencia</small>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Lista de obstáculos -->
+                        <div class="table-responsive small">
+                            <table class="table compact-table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Hora</th>
+                                        <th>Tipo</th>
+                                        <th>Ubicación</th>
+                                        <th>Origen</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="obstaclesTable">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-2">
+                                            <i class="bi bi-shield-check"></i>
+                                            <small>Sin obstáculos</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: Dispositivos -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card custom-card">
+                    <div class="card-header custom-card-header-success">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-car-front"></i> Dispositivos
+                            </h5>
+                            <button class="btn btn-sm btn-outline-light" id="newDeviceBtn">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive small">
+                            <table class="table compact-table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>ID</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="devicesTable">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted py-2">
+                                            <i class="bi bi-car-front"></i>
+                                            <small>Sin dispositivos</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Referencia de Operaciones -->
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="card custom-card">
+                    <div class="card-header custom-card-header-secondary">
+                        <h6 class="mb-0">
+                            <i class="bi bi-info-circle"></i> Referencia (11 Movimientos)
+                        </h6>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="row small">
+                            <div class="col-4">
+                                <strong>Básicos:</strong>
+                                <div>1 - Adelante</div>
+                                <div>2 - Atrás</div>
+                                <div>3 - Detener</div>
+                            </div>
+                            <div class="col-4">
+                                <strong>Giros:</strong>
+                                <div>8 - 90° Der</div>
+                                <div>9 - 90° Izq</div>
+                                <div>10 - 360° Der</div>
+                                <div>11 - 360° Izq</div>
+                            </div>
+                            <div class="col-4">
+                                <strong>Vueltas:</strong>
+                                <div>4 - V.Adel Der</div>
+                                <div>5 - V.Adel Izq</div>
+                                <div>6 - V.Atrás Der</div>
+                                <div>7 - V.Atrás Izq</div>
                             </div>
                         </div>
                     </div>
@@ -711,9 +737,8 @@
         </div>
     </div>
 
-    <!-- ============ MODALES ============ -->
-
-    <!-- Modal: Nueva/Editar Secuencia -->
+    <!-- MODALES -->
+    <!-- Modal: Secuencia -->
     <div class="modal fade" id="sequenceModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -726,50 +751,27 @@
                 <div class="modal-body">
                     <form id="sequenceForm">
                         <input type="hidden" id="sequenceId">
-                        
                         <div class="mb-3">
-                            <label class="form-label"><strong>Nombre de la Secuencia:</strong></label>
-                            <input type="text" class="form-control" id="sequenceName" required placeholder="Ej: Recorrido Cuadrado">
+                            <label class="form-label"><strong>Nombre:</strong></label>
+                            <input type="text" class="form-control form-control-sm" id="sequenceName" required placeholder="Ej: Recorrido Cuadrado">
                         </div>
-
                         <div class="mb-3">
                             <label class="form-label"><strong>Dispositivo:</strong></label>
-                            <select class="form-select" id="sequenceDevice" required>
+                            <select class="form-select form-select-sm" id="sequenceDevice" required>
                                 <option value="">Seleccionar...</option>
                             </select>
                         </div>
-
                         <div class="mb-3">
-                            <label class="form-label"><strong>Operaciones (separadas por comas):</strong></label>
-                            <input type="text" class="form-control" id="sequenceOperations" required 
-                                   placeholder="Ej: 1,8,1,9,1,8,1,9,3">
-                            <small class="text-muted">Ingresa los números de operación del 1 al 11 separados por comas. Ejemplo: 1,8,1,9,3</small>
-                        </div>
-
-                        <!-- Referencia rápida de operaciones -->
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h6 class="card-title">Referencia de Operaciones:</h6>
-                                <div class="row small">
-                                    <div class="col-4">1: Adelante</div>
-                                    <div class="col-4">2: Atrás</div>
-                                    <div class="col-4">3: Detener</div>
-                                    <div class="col-4">4: Vuelta Adel Der</div>
-                                    <div class="col-4">5: Vuelta Adel Izq</div>
-                                    <div class="col-4">6: Vuelta Atrás Der</div>
-                                    <div class="col-4">7: Vuelta Atrás Izq</div>
-                                    <div class="col-4">8: Giro 90° Der</div>
-                                    <div class="col-4">9: Giro 90° Izq</div>
-                                    <div class="col-4">10: Giro 360° Der</div>
-                                    <div class="col-4">11: Giro 360° Izq</div>
-                                </div>
-                            </div>
+                            <label class="form-label"><strong>Operaciones:</strong></label>
+                            <input type="text" class="form-control form-control-sm" id="sequenceOperations" required 
+                                   placeholder="Ej: 1,8,1,9,3">
+                            <small class="text-muted">Números del 1 al 11 separados por comas</small>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn custom-btn-demo" id="saveSequenceBtn">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn custom-btn-demo btn-sm" id="saveSequenceBtn">
                         <i class="bi bi-save"></i> Guardar
                     </button>
                 </div>
@@ -777,7 +779,7 @@
         </div>
     </div>
 
-    <!-- Modal: Nuevo/Editar Dispositivo -->
+    <!-- Modal: Dispositivo -->
     <div class="modal fade" id="deviceModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -790,22 +792,19 @@
                 <div class="modal-body">
                     <form id="deviceForm">
                         <input type="hidden" id="deviceId">
-                        
                         <div class="mb-3">
-                            <label class="form-label"><strong>Nombre del Dispositivo:</strong></label>
-                            <input type="text" class="form-control" id="deviceName" required placeholder="Ej: Carro_Deportivo">
+                            <label class="form-label"><strong>Nombre:</strong></label>
+                            <input type="text" class="form-control form-control-sm" id="deviceName" required placeholder="Ej: Carro_Deportivo">
                         </div>
-
                         <div class="mb-3">
                             <label class="form-label"><strong>Descripción:</strong></label>
-                            <textarea class="form-control" id="deviceDescription" rows="3" 
-                                      placeholder="Descripción opcional del dispositivo"></textarea>
+                            <textarea class="form-control form-control-sm" id="deviceDescription" rows="2" placeholder="Descripción opcional"></textarea>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn custom-btn-demo" id="saveDeviceBtn">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn custom-btn-demo btn-sm" id="saveDeviceBtn">
                         <i class="bi bi-save"></i> Guardar
                     </button>
                 </div>
@@ -814,29 +813,25 @@
     </div>
 
     <!-- Footer -->
-    <footer class="custom-footer mt-5">
-        <div class="container py-4">
+    <footer class="custom-footer">
+        <div class="container py-2">
             <div class="row">
                 <div class="col-md-6">
-                    <h5>Denisse Moguel</h5>
-                    <p class="mb-1">Control Carro IoT</p>
-                    <p class="mb-0">Sistema de Control en Tiempo Real con CRUD</p>
+                    <h6>Denisse Moguel</h6>
+                    <p class="mb-1 small">Control Carro IoT</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p class="mb-0">Tecnologías:</p>
-                    <p class="mb-0">WebSocket • Bootstrap • JavaScript • Flask • MySQL</p>
+                    <p class="mb-0 small">WebSocket • Bootstrap • JavaScript • Flask • MySQL</p>
                 </div>
             </div>
-            <hr class="my-3">
-            <div class="text-center">
-                <p class="mb-0">&copy; 2025 Denisse Moguel. Todos los derechos reservados.</p>
+            <div class="text-center mt-2">
+                <p class="mb-0 small">&copy; 2025 Denisse Moguel</p>
             </div>
         </div>
     </footer>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- ✅ CORREGIDO: Solo WebSocket nativo, NO Socket.IO -->
     <script src="js/app.js"></script>
 </body>
 </html>
