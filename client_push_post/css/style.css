@@ -1148,3 +1148,21 @@ footer::before {
     }
     
 }
+/* Ajuste del 67% a toda la web */
+html, body {
+    zoom: 67%;
+    transform-origin: top left;
+    width: 149.25%; /* Compensa el zoom (100/0.67 ≈ 149.25) */
+    height: 149.25%;
+}
+
+/* Asegurar que todo se muestre correctamente */
+body {
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+/* Opcional: Ajustar contenedor principal */
+.main-container {
+    width: 100%;
+}
